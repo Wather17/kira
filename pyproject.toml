@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kira-manga"
+version = "0.1.0"
+description = "Manga upscale pipeline with Real-ESRGAN & Kindle adaptation via KCC for Google Colab and Google Drive"
+readme = "README.md"
+authors = [{ name = "Kira Team" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "realesrgan>=0.3.0",
+    "Pillow>=9.0.0",
+    "opencv-python>=4.5.0",
+    "natsort>=8.0.0",
+    "tqdm>=4.64.0",
+    "click>=8.0.0",
+    "rich>=12.0.0",
+    "PyYAML>=6.0",
+    "rarfile>=4.0"
+]
+
+[project.scripts]
+kira = "kira.cli:cli"
