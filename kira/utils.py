@@ -1,7 +1,10 @@
 import os
 import re
 import sys
+import shutil
+import subprocess
 import zipfile
+
 from pathlib import Path
 from typing import List, Union
 from natsort import natsorted
@@ -99,4 +102,35 @@ def create_cbz_archive(source_dir: Union[str, Path], output_cbz_path: Union[str,
             cbz.write(img_path, arcname=arcname)
 
     return output_cbz_path
+
+
+def is_rclone_installed() -> bool:
+    """Check if rclone executable is available in system PATH."""
+    return shutil.which("rclone") is not None
+
+
+def get_rclone_remotes() -> list[str]:
+    """List configured rclone remotes."""
+    if not is_rclone_installed():
+        return []
+    try:
+        res = subprocess.run(["rclone", "listremotes"], capture_output=True, text=True)
+        if res.returncode == 0:
+            return [line.strip() for line in res.stdout.strip().splitlines() if line.strip()]
+    except Exception:
+        pass
+    return []
+
+
+def rclone_copy(src: Union[str, Path], dst: str, progress: bool = True) -> bool:
+    """Execute rclone copy from src to dst remote/path."""
+    if not is_rclone_installed():
+        print("[Kira Warning] rclone is not installed.")
+        return False
+    cmd = ["rclone", "copy", str(src), dst]
+    if progress:
+        cmd.append("-P")
+    res = subprocess.run(cmd)
+    return res.returncode == 0
+
 
