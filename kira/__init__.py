@@ -10,6 +10,7 @@ from kira.extractor import MangaExtractor
 from kira.upscaler import MangaUpscaler
 from kira.converter import KindleConverter
 from kira.merger import VolumeMerger, AOT_VOLUME_MAPPING
+from kira.metadata import MangaMetadata, set_custom_cover, optimize_volume_structure
 
 __all__ = [
     "MangaPipeline",
@@ -18,5 +19,9 @@ __all__ = [
     "KindleConverter",
     "VolumeMerger",
     "AOT_VOLUME_MAPPING",
+    "MangaMetadata",
+    "set_custom_cover",
+    "optimize_volume_structure",
 ]
+
 

@@ -116,8 +116,11 @@ class KindleConverter:
         cmd.extend(['-f', self.output_format])
         cmd.extend(['-o', str(output_dir)])
         cmd.extend(['-t', title])
+        cmd.extend(['--metadatatitle', '2'])
+        cmd.append('--keepcomicinfo')
 
         if self.manga_style:
+
             cmd.append('-m')  # Right-to-Left reading order for manga
         if self.hq:
             cmd.append('--hq') # High Quality double-page spread splitting
