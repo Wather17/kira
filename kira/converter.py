@@ -145,14 +145,15 @@ class KindleConverter:
 
         # Locate expected output file in output_dir
         expected_ext = f".{self.output_format.lower()}"
-        expected_file = output_dir / f"{input_path.stem}{expected_ext}"
+        expected_file = output_dir / f"{title}{expected_ext}"
         if expected_file.exists():
             return expected_file
 
         # Check any matching file created in output_dir
-        matches = list(output_dir.glob(f"{input_path.stem}*"))
+        matches = [f for f in output_dir.glob(f"{title}*") if f.is_file()]
         if matches:
             return matches[0]
+
 
         return output_dir
 
