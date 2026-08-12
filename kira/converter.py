@@ -105,7 +105,6 @@ class KindleConverter:
 
     def _convert_with_kcc(self, input_path: Path, output_dir: Path, title: str) -> Path:
         """Execute KCC CLI (`kcc-c2e`)."""
-        # If input is a directory, package into temporary CBZ first or pass folder directly
         cmd = []
         if ' ' in self.kcc_bin:
             cmd = self.kcc_bin.split(' ')
@@ -121,7 +120,8 @@ class KindleConverter:
         if self.manga_style:
             cmd.append('-m')  # Right-to-Left reading order for manga
         if self.hq:
-            cmd.append('-hq') # High Quality double-page spread splitting
+            cmd.append('--hq') # High Quality double-page spread splitting
+
         if self.stretch:
             cmd.append('-s')
         if self.upscale:
@@ -143,19 +143,35 @@ class KindleConverter:
             print("[Kira] Attempting CBZ fallback creation...")
             return self._fallback_cbz_convert(input_path, output_dir, title)
 
-        # Locate expected output file in output_dir
         expected_ext = f".{self.output_format.lower()}"
-        expected_file = output_dir / f"{title}{expected_ext}"
-        if expected_file.exists():
-            return expected_file
+        target_file = output_dir / f"{title}{expected_ext}"
 
-        # Check any matching file created in output_dir
+        if target_file.exists():
+            return target_file
+
+        # Check for any created output file matching expected_ext or input_path name
+        for cand_name in [input_path.stem, input_path.name, "upscaled"]:
+            candidate = output_dir / f"{cand_name}{expected_ext}"
+            if candidate.exists():
+                if candidate != target_file:
+                    shutil.move(candidate, target_file)
+                return target_file
+
+        # Check any newly created file with expected extension in output_dir
+        for f in output_dir.glob(f"*{expected_ext}"):
+            if f.is_file():
+                if f != target_file:
+                    shutil.move(f, target_file)
+                return target_file
+
+        # Fallback check
         matches = [f for f in output_dir.glob(f"{title}*") if f.is_file()]
         if matches:
             return matches[0]
 
+        return target_file
 
-        return output_dir
+
 
     def _fallback_cbz_convert(self, input_path: Path, output_dir: Path, title: str) -> Path:
         """Fallback when KCC is absent: create clean CBZ archive."""
