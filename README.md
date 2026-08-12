@@ -100,12 +100,49 @@ kira info
 
 ---
 
+## ⚡ Google Colab CLI (`colab`)
+
+O **Google Colab CLI** (`google-colab-cli`) é a ferramenta oficial do Google que permite controlar instâncias de GPU/TPU do Colab diretamente pelo terminal da sua máquina local!
+
+### Instalação
+
+```bash
+pip install google-colab-cli
+```
+
+### Principais Comandos
+
+- **Autenticar e criar uma nova VM**:
+  ```bash
+  colab new
+  ```
+- **Executar código Python remotamente na GPU do Colab**:
+  ```bash
+  colab exec "import kira; print('Kira rodando na GPU do Colab!')"
+  ```
+- **Rodar um pipeline completo e liberar a VM ao terminar**:
+  ```bash
+  colab run script.py
+  ```
+- **Fazer upload/download de arquivos da VM do Colab**:
+  ```bash
+  colab upload ./Attack_on_Titan_Vol_01.cbz
+  colab download ./Attack_on_Titan_Vol_01.epub
+  ```
+- **Listar sessões ativas e encerrar**:
+  ```bash
+  colab sessions
+  colab stop
+  ```
+
+---
+
 ## 🧪 Testes
 
 Para rodar os testes automatizados da biblioteca:
 
 ```bash
-python3 -m unittest discover -s tests
+pytest tests/
 ```
 
 ---
@@ -113,3 +150,4 @@ python3 -m unittest discover -s tests
 ## 📄 Licença
 
 Este projeto está licenciado sob a licença [MIT](LICENSE).
+
