@@ -135,6 +135,25 @@ def info():
     console.print(table)
 
 
+@cli.command(name="merge-volumes")
+@click.option("-i", "--input", "input_dir", required=True, type=str, help="Input directory containing chapter CBZ files or folders.")
+@click.option("-o", "--output", "output_dir", required=True, type=str, help="Output directory to save merged Volume CBZ files.")
+@click.option("-t", "--title", default="Attack_on_Titan", type=str, help="Manga title prefix for output files.")
+@click.option("-m", "--mapping", default=None, type=str, help="Path to custom YAML/JSON chapter mapping file.")
+def merge_volumes(input_dir: str, output_dir: str, title: str, mapping: Optional[str]):
+    """Merge individual chapter CBZ files or folders into official Volume archives."""
+    from kira.merger import VolumeMerger
+    console.print(Panel.fit("[bold green]Kira Manga Volume Merger[/bold green]", border_style="green"))
+
+    inp = resolve_google_drive_path(input_dir)
+    out = resolve_google_drive_path(output_dir)
+
+    merger = VolumeMerger(manga_title=title)
+    merged_files = merger.merge_all_volumes(inp, out, mapping=mapping)
+
+    console.print(f"\n[bold green]Successfully created {len(merged_files)} Volume CBZ files in {out}[/bold green]")
+
+
 @cli.command(name="colab-setup")
 def colab_setup():
     """Install required dependencies inside a Google Colab notebook environment."""
@@ -142,6 +161,7 @@ def colab_setup():
     os.system("pip install -q torch torchvision realesrgan natsort tqdm Pillow opencv-python rich click PyYAML rarfile")
     os.system("apt-get update -qq && apt-get install -y -qq p7zip-full unrar python3-kindlecomicconverter kcc")
     console.print("[bold green]Colab setup complete![/bold green]")
+
 
 
 def _print_summary(stats_list):
