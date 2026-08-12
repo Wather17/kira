@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "colab-mcp": {
-      "command": "/home/henrique/.local/bin/uvx",
-      "args": ["git+https://github.com/googlecolab/colab-mcp"]
+      "command": "/home/henrique/.local/bin/colab-mcp-runner",
+      "args": []
     }
   }
 }
