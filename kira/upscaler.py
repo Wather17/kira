@@ -10,8 +10,15 @@ from tqdm import tqdm
 
 try:
     import torch
-except ImportError:
-    torch = None
+    import torchvision.transforms.functional as F_tf
+    sys.modules['torchvision.transforms.functional_tensor'] = F_tf
+except Exception:
+    try:
+        import torch
+    except ImportError:
+        torch = None
+
+
 
 
 # Real-ESRGAN model URLs & configs
