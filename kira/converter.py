@@ -51,11 +51,19 @@ class KindleConverter:
 
     def _find_kcc_binary(self) -> Optional[str]:
         """Find path to kcc-c2e or kindlecomicconverter CLI executable."""
-        kcc_path = shutil.which('kcc-c2e') or shutil.which('kcc')
+        import os, sys
+        kcc_path = shutil.which('kcc-c2e') or shutil.which('kcc') or shutil.which('kindlecomicconverter')
         if kcc_path:
             return kcc_path
 
-        # Check if runnable via python -m kindlecomicconverter or kcc CLI in current python env
+        # Check virtual environment bin directory relative to current python executable
+        bin_dir = os.path.dirname(sys.executable)
+        for name in ['kcc-c2e', 'kcc', 'kindlecomicconverter']:
+            candidate = os.path.join(bin_dir, name)
+            if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+
+        # Check if runnable via python module
         try:
             res = subprocess.run(
                 [sys.executable, '-m', 'kindlecomicconverter.kcc-c2e', '--help'],
@@ -69,6 +77,7 @@ class KindleConverter:
             pass
 
         return None
+
 
     def convert(
         self,
