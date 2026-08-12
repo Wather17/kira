@@ -137,6 +137,20 @@ class VolumeMerger:
                 print(f"[Kira Merger] Skipping Volume {volume_num:02d}: No matching chapter files found.")
                 return None
 
+            # Apply commercial Kindle metadata and cover optimization before archiving
+            from kira.metadata import optimize_volume_structure
+            from kira.providers import OnlineMangaProvider
+
+            meta = OnlineMangaProvider.search_manga_metadata(self.manga_title)
+            author = meta.get("author", "Unknown") if meta else "Unknown"
+            
+            optimize_volume_structure(
+                vol_temp,
+                series_name=self.manga_title,
+                volume_number=volume_num,
+                author=author
+            )
+
             vol_name = f"{self.manga_title}_Vol_{volume_num:02d}.cbz"
             output_cbz = out_path / vol_name
             res = create_cbz_archive(vol_temp, output_cbz)
@@ -154,10 +168,16 @@ class VolumeMerger:
         mapping: Optional[Union[Dict[int, List[int]], str, Path]] = None
     ) -> List[Path]:
         """
-        Merge all volumes according to mapping. Defaults to Attack on Titan mapping if none provided.
+        Merge all volumes according to mapping. Fetches online volume breakdown automatically if none provided.
         """
         if mapping is None:
-            vol_map = AOT_VOLUME_MAPPING
+            if "attack" in self.manga_title.lower() or "shingeki" in self.manga_title.lower():
+                vol_map = AOT_VOLUME_MAPPING
+            else:
+                from kira.providers import OnlineMangaProvider
+                print(f"[Kira Merger] Querying online volume division for '{self.manga_title}'...")
+                fetched_map = OnlineMangaProvider.fetch_volume_chapter_mapping(self.manga_title)
+                vol_map = fetched_map if fetched_map else AOT_VOLUME_MAPPING
         elif isinstance(mapping, (str, Path)):
             vol_map = self.load_mapping(mapping)
         else:
@@ -170,3 +190,4 @@ class VolumeMerger:
                 output_files.append(cbz_res)
 
         return output_files
+
