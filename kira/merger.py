@@ -75,20 +75,23 @@ class VolumeMerger:
 
         return {int(k): [int(c) for c in v] for k, v in raw_dict.items()}
 
-    def find_chapter_file(self, chapters_dir: Path, chapter_num: int) -> Optional[Path]:
-        """Locate file or folder matching chapter number (e.g. '001', 'ch 1', 'chapter_1.cbz')."""
-        patterns = [
-            rf"(?:ch|chapter|cap|capitulo)[\s_\-]*0*{chapter_num}(?!\d)",
-            rf"^0*{chapter_num}(?!\d)",
-            rf"0*{chapter_num}\b"
-        ]
+    def find_chapter_files(self, chapters_dir: Path, chapter_num: Union[int, float]) -> List[Path]:
+        """Locate file(s) or folder(s) matching chapter number (e.g. 'Ch. 1', 'ch_01', 'Ch. 13.5')."""
+        matches = []
+        # Pattern matching exact chapter number or decimal sub-chapters (e.g. 13 and 13.5)
+        pat_exact = rf"(?:ch|chapter|cap|capitulo)[\s_\-\.]*0*{chapter_num}(?!\d)"
+        pat_sub = rf"(?:ch|chapter|cap|capitulo)[\s_\-\.]*0*{chapter_num}\.\d+"
+        pat_num = rf"\b0*{chapter_num}\b"
 
-        for item in chapters_dir.iterdir():
+        for item in natural_sort_filenames(list(chapters_dir.iterdir())):
             name_lower = item.name.lower()
-            for pat in patterns:
-                if re.search(pat, name_lower):
-                    return item
-        return None
+            if re.search(pat_exact, name_lower) or re.search(pat_num, name_lower):
+                matches.append(item)
+            elif isinstance(chapter_num, int) and re.search(pat_sub, name_lower):
+                matches.append(item)
+
+        return matches
+
 
     def merge_volume(
         self,
@@ -104,27 +107,31 @@ class VolumeMerger:
         out_path = Path(output_dir).resolve()
         out_path.mkdir(parents=True, exist_ok=True)
 
-        vol_temp = Path(tempfile.mkdtemp(prefix=f"kira_vol_{volume_num:02d}_"))
+        from kira.utils import get_safe_temp_dir
+        vol_temp = get_safe_temp_dir(f"vol_{volume_num:02d}")
+
 
         try:
             global_page_idx = 1
             found_chapters = 0
 
             for ch_num in chapter_nums:
-                ch_file = self.find_chapter_file(chapters_path, ch_num)
-                if not ch_file:
+                ch_files = self.find_chapter_files(chapters_path, ch_num)
+                if not ch_files:
                     print(f"[Kira Merger Warning] Chapter {ch_num} for Volume {volume_num} not found in {chapters_path}")
                     continue
 
-                found_chapters += 1
-                _, ch_images = self.extractor.extract(ch_file)
+                for ch_file in ch_files:
+                    found_chapters += 1
+                    _, ch_images = self.extractor.extract(ch_file)
 
-                # Copy images to volume temp dir with ordered sequential names
-                for img_path in ch_images:
-                    ext = img_path.suffix.lower()
-                    target_name = f"page_{global_page_idx:04d}{ext}"
-                    shutil.copy2(img_path, vol_temp / target_name)
-                    global_page_idx += 1
+                    # Copy images to volume temp dir with ordered sequential names
+                    for img_path in ch_images:
+                        ext = img_path.suffix.lower()
+                        target_name = f"page_{global_page_idx:04d}{ext}"
+                        shutil.copy2(img_path, vol_temp / target_name)
+                        global_page_idx += 1
+
 
             if found_chapters == 0:
                 print(f"[Kira Merger] Skipping Volume {volume_num:02d}: No matching chapter files found.")

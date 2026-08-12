@@ -64,6 +64,20 @@ def resolve_google_drive_path(path_str: str) -> Path:
     return p.resolve()
 
 
+def get_safe_temp_dir(prefix: str = "kira_temp") -> Path:
+    """Get safe temporary directory avoiding small tmpfs RAM disk limits."""
+    import tempfile
+    if is_colab():
+        base = Path("/content/kira_temp")
+    else:
+        # Use workspace scratch dir if present, else fallback to tempfile
+        base = Path("./scratch/kira_temp").resolve()
+
+    target = base / f"{prefix}_{os.getpid()}"
+    target.mkdir(parents=True, exist_ok=True)
+    return target
+
+
 def create_cbz_archive(source_dir: Union[str, Path], output_cbz_path: Union[str, Path]) -> Path:
     """
     Package all images in source_dir into a cleanly formatted CBZ (ZIP) archive.
@@ -85,3 +99,4 @@ def create_cbz_archive(source_dir: Union[str, Path], output_cbz_path: Union[str,
             cbz.write(img_path, arcname=arcname)
 
     return output_cbz_path
+

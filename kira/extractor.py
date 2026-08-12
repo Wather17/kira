@@ -11,15 +11,16 @@ try:
 except ImportError:
     rarfile = None
 
-from kira.utils import SUPPORTED_ARCHIVE_EXTS, get_image_files, natural_sort_filenames
+from kira.utils import SUPPORTED_ARCHIVE_EXTS, get_image_files, get_safe_temp_dir, natural_sort_filenames
 
 
 class MangaExtractor:
     """Handles unpacking manga archives (CBZ, ZIP, CBR, RAR) or directory scans."""
 
     def __init__(self, temp_dir: Optional[Union[str, Path]] = None):
-        self.temp_dir = Path(temp_dir) if temp_dir else Path(tempfile.gettempdir()) / "kira_extracted"
+        self.temp_dir = Path(temp_dir) if temp_dir else get_safe_temp_dir("extracted")
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+
 
     def extract(self, source_path: Union[str, Path]) -> Tuple[Path, List[Path]]:
         """
