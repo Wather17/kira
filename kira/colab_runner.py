@@ -49,17 +49,21 @@ def run_pipeline_on_colab(
         return False
 
     try:
-        # Step 2: Mount Google Drive remotely
-        console.print("[bold cyan][Kira Remote][/bold cyan] Mounting Google Drive on remote VM...")
-        cmd_mount = [colab_bin, "drivemount", "-s", session_name]
-        subprocess.run(cmd_mount, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Step 3: Run pipeline remotely on GPU VM
+        # Step 2: Run pipeline remotely on GPU VM
         console.print(f"[bold cyan][Kira Remote][/bold cyan] Executing Kira Pipeline for '{input_path}' -> '{output_dir}'...")
 
         import tempfile
         script_code = f"""
 import os, sys
+
+# Mount Google Drive if not already mounted
+if not os.path.exists('/content/drive/MyDrive'):
+    print('[Remote Colab Worker] Mounting Google Drive...')
+    try:
+        from google.colab import drive
+        drive.mount('/content/drive')
+    except Exception as e:
+        print(f'[Remote Colab Worker] Note: {{e}}')
 
 print('[Remote Colab Worker] Installing system packages & latest Kira...')
 os.system('apt-get update -qq && apt-get install -y -qq p7zip-full unrar > /dev/null 2>&1')
@@ -70,6 +74,7 @@ exit_code = os.system('kira process -i "/content/drive/MyDrive/{input_path}" -o 
 if exit_code != 0:
     sys.exit(1)
 """
+
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
             f.write(script_code)
             temp_script_path = f.name
