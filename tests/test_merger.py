@@ -30,3 +30,21 @@ def test_volume_merger():
         assert len(res_files) == 1
         assert res_files[0].exists()
         assert res_files[0].name == "TestManga_Vol_01.cbz"
+
+
+def test_auto_detect_manga_title():
+    from kira.merger import auto_detect_manga_title
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_folder = tmp_path / "Chainsaw_Man"
+        manga_folder.mkdir()
+        
+        # Test 1: Folder name detection
+        assert auto_detect_manga_title(manga_folder) == "Chainsaw Man"
+        
+        # Test 2: Chapter filename detection inside generic folder
+        gen_folder = tmp_path / "chapters"
+        gen_folder.mkdir()
+        (gen_folder / "Vinland_Saga_Ch_001.cbz").touch()
+        assert auto_detect_manga_title(gen_folder) == "Vinland Saga"
+

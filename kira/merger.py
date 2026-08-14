@@ -48,12 +48,52 @@ AOT_VOLUME_MAPPING: Dict[int, List[int]] = {
 }
 
 
+def auto_detect_manga_title(chapters_dir: Union[str, Path]) -> str:
+    """Automatically detect manga series title from directory name or chapter filenames."""
+    path = Path(chapters_dir).resolve()
+    generic_names = {"chapters", "chapter", "capitulos", "input", "inputs", "manga", "mangas", "raw", "temp", "cbz", "zip", "scratch"}
+    
+    # 1. Check folder name first
+    dir_name = path.name
+    if dir_name.lower() not in generic_names and not dir_name.isdigit():
+        clean_dir = re.sub(r"\[.*?\]|\(.*?\)", "", dir_name)
+        clean_dir = re.sub(r"[_\.]+", " ", clean_dir).strip()
+        if len(clean_dir) > 1:
+            return clean_dir
+
+    # 2. Check chapter files inside directory
+    try:
+        sample_files = [f for f in path.iterdir() if f.is_file() or f.is_dir()][:5]
+        for f in sample_files:
+            raw_name = f.stem
+            clean = re.sub(r"\[.*?\]|\(.*?\)", "", raw_name)
+            
+            # Format: "Ch. 1 - Attack on Titan"
+            m_after = re.search(r"(?:ch|chapter|cap)[\s_\-\.]*\d+[\s_\-\.]*[-–—][\s_\-\.]*(.+)", clean, re.IGNORECASE)
+            if m_after:
+                title_cand = m_after.group(1).strip()
+                if title_cand:
+                    return re.sub(r"[_\.]+", " ", title_cand).strip()
+                    
+            # Format: "Death_Note_Ch_01" or "Monster - Chapter 12"
+            clean = re.sub(r"(?:[\s_\-\.]*(?:ch|chapter|cap|capitulo|c|vol|volume)[\s_\-\.]*\d+.*)", "", clean, flags=re.IGNORECASE)
+            clean = re.sub(r"^(?:unofficial|raw|scan)[\s_\-\.]*", "", clean, flags=re.IGNORECASE)
+            clean = re.sub(r"[_\.]+", " ", clean).strip()
+            if len(clean) > 2:
+                return clean
+    except Exception:
+        pass
+
+    return "Manga"
+
+
 class VolumeMerger:
     """Combines individual chapter files/folders into official Volume CBZ archives."""
 
-    def __init__(self, manga_title: str = "Manga"):
+    def __init__(self, manga_title: Optional[str] = None):
         self.manga_title = manga_title
         self.extractor = MangaExtractor()
+
 
     def load_mapping(self, mapping_source: Union[str, Path, Dict]) -> Dict[int, List[int]]:
         """
@@ -182,6 +222,10 @@ class VolumeMerger:
         """
         Merge all volumes according to mapping. Fetches online volume breakdown automatically if none provided.
         """
+        if not self.manga_title:
+            self.manga_title = auto_detect_manga_title(chapters_dir)
+            print(f"[Kira Merger] Auto-detected Manga Title: '{self.manga_title}'")
+
         if mapping is None:
             if "attack" in self.manga_title.lower() or "shingeki" in self.manga_title.lower():
                 vol_map = AOT_VOLUME_MAPPING
@@ -190,6 +234,7 @@ class VolumeMerger:
                 print(f"[Kira Merger] Querying online volume division for '{self.manga_title}'...")
                 fetched_map = OnlineMangaProvider.fetch_volume_chapter_mapping(self.manga_title)
                 vol_map = fetched_map if fetched_map else AOT_VOLUME_MAPPING
+
         elif isinstance(mapping, (str, Path)):
             vol_map = self.load_mapping(mapping)
         else:

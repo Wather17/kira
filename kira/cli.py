@@ -140,9 +140,10 @@ def info():
 @cli.command(name="merge-volumes")
 @click.option("-i", "--input", "input_dir", required=True, type=str, help="Input directory containing chapter CBZ files or folders.")
 @click.option("-o", "--output", "output_dir", required=True, type=str, help="Output directory to save merged Volume CBZ files.")
-@click.option("-t", "--title", default="Attack_on_Titan", type=str, help="Manga title prefix for output files.")
+@click.option("-t", "--title", default=None, type=str, help="Manga title (optional - auto-detected if not provided).")
 @click.option("-m", "--mapping", default=None, type=str, help="Path to custom YAML/JSON chapter mapping file.")
-def merge_volumes(input_dir: str, output_dir: str, title: str, mapping: Optional[str]):
+def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping: Optional[str]):
+
     """Merge individual chapter CBZ files or folders into official Volume archives."""
     from kira.merger import VolumeMerger
     console.print(Panel.fit("[bold green]Kira Manga Volume Merger[/bold green]", border_style="green"))
