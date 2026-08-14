@@ -133,6 +133,44 @@ class OnlineMangaProvider:
             return None
 
     @classmethod
+    def fetch_volume_covers(cls, manga_title: str) -> Dict[int, str]:
+        """Fetch all official volume cover URLs from MangaDex API."""
+        try:
+            search_res = requests.get(
+                f"{cls.MANGADEX_URL}/manga",
+                params={"title": manga_title, "order[relevance]": "desc", "limit": 5},
+                timeout=10
+            )
+            if search_res.status_code != 200:
+                return {}
+
+            manga_list = search_res.json().get("data", [])
+            if not manga_list:
+                return {}
+
+            manga_id = manga_list[0]["id"]
+            cover_res = requests.get(
+                f"{cls.MANGADEX_URL}/cover",
+                params={"manga[]": [manga_id], "limit": 100},
+                timeout=10
+            )
+            if cover_res.status_code != 200:
+                return {}
+
+            volume_covers = {}
+            for c in cover_res.json().get("data", []):
+                vol_str = c.get("attributes", {}).get("volume")
+                file_name = c.get("attributes", {}).get("fileName")
+                if vol_str and vol_str.isdigit() and file_name:
+                    vol_num = int(vol_str)
+                    volume_covers[vol_num] = f"https://uploads.mangadex.org/covers/{manga_id}/{file_name}"
+
+            return volume_covers
+        except Exception as e:
+            print(f"[Kira Warning] Failed to fetch volume covers for '{manga_title}': {e}")
+            return {}
+
+    @classmethod
     def download_image(cls, image_url: str, output_path: Path) -> bool:
         """Download remote image URL to local file path."""
         try:
@@ -145,3 +183,4 @@ class OnlineMangaProvider:
         except Exception as e:
             print(f"[Kira Warning] Could not download image from {image_url}: {e}")
         return False
+

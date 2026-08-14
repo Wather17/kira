@@ -101,7 +101,13 @@ def create_cbz_archive(source_dir: Union[str, Path], output_cbz_path: Union[str,
             arcname = f"{idx + 1:04d}{ext}"
             cbz.write(img_path, arcname=arcname)
 
+        # Include ComicInfo.xml if present
+        comic_info = source_dir / "ComicInfo.xml"
+        if comic_info.exists():
+            cbz.write(comic_info, arcname="ComicInfo.xml")
+
     return output_cbz_path
+
 
 
 def is_rclone_installed() -> bool:

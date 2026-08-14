@@ -144,12 +144,24 @@ class VolumeMerger:
             meta = OnlineMangaProvider.search_manga_metadata(self.manga_title)
             author = meta.get("author", "Unknown") if meta else "Unknown"
             
+            # Fetch official volume cover if available
+            vol_covers = OnlineMangaProvider.fetch_volume_covers(self.manga_title)
+            cover_url = vol_covers.get(volume_num) or (meta.get("cover_url") if (meta and volume_num == 1) else None)
+            
+            cover_file = None
+            if cover_url:
+                cover_file = vol_temp / "0000_cover.jpg"
+                OnlineMangaProvider.download_image(cover_url, cover_file)
+
+
             optimize_volume_structure(
                 vol_temp,
                 series_name=self.manga_title,
                 volume_number=volume_num,
-                author=author
+                author=author,
+                custom_cover=cover_file if (cover_file and cover_file.exists()) else None
             )
+
 
             vol_name = f"{self.manga_title}_Vol_{volume_num:02d}.cbz"
             output_cbz = out_path / vol_name

@@ -62,8 +62,10 @@ def set_custom_cover(volume_dir: Union[str, Path], cover_image_path: Union[str, 
 
     ext = cover_image_path.suffix.lower()
     target_cover = volume_dir / f"0000_cover{ext}"
-    shutil.copy2(cover_image_path, target_cover)
+    if cover_image_path.resolve() != target_cover.resolve():
+        shutil.copy2(cover_image_path, target_cover)
     return target_cover
+
 
 
 def optimize_volume_structure(
