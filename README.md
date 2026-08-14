@@ -1,139 +1,131 @@
-# 🌸 Kira: Manga Upscale & Kindle Adaptation Pipeline
+# 🌸 Kira — AI Manga Upscaling & Kindle Converter Pipeline
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Wather17/kira/blob/main/Kira_Manga_Pipeline.ipynb)
-[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<div align="center">
 
-**Kira** é um pipeline automatizado desenvolvido para amantes de mangás que desejam a melhor experiência de leitura no **Amazon Kindle**.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Real--ESRGAN-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Google Colab](https://img.shields.io/badge/Google_Colab-GPU_Accelerated-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white)](https://colab.research.google.com/)
+[![Kindle](https://img.shields.io/badge/Kindle-Paperwhite%20%7C%20Oasis%20%7C%20Scribe-FF9900?style=for-the-badge&logo=amazon&logoColor=white)](https://www.amazon.com/sendtokindle)
+[![Tests](https://img.shields.io/badge/Tests-16%2F16%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
-O Kira resolve dois problemas comuns em mangás digitais:
-1. **Baixa resolução de páginas baixadas/scans**: melhora drasticamente a nitidez e as traços do mangá usando **Real-ESRGAN** (modelo `RealESRGAN_x4plus_anime_6B` especializado em traços de anime e retículas de mangá).
-2. **Formatação incorreta no Kindle**: adapta as dimensões, contraste, gamma e ordem de leitura (Direita para Esquerda / RTL) para o modelo exato do seu e-reader Kindle usando a tecnologia do **KCC (Kindle Comic Converter)**.
+**Pipeline de inteligência artificial de ponta a ponta para restauração, ampliação (upscale) e conversão profissional de mangás para leitores digitais Kindle (e-Ink).**
+
+[Guia de Início](docs/getting_started.md) • [Manual da CLI](docs/cli_reference.md) • [Guia do Colab](docs/google_colab_guide.md) • [Guia do Kindle](docs/kindle_guide.md) • [Arquitetura](docs/architecture.md) • [FAQ](docs/troubleshooting.md)
+
+</div>
 
 ---
 
-## 🛠️ Arquitetura do Pipeline
+## ✨ Destaques do Projeto
 
+- 🤖 **Upscaling Inteligente com IA**: Amplia traços finos de mangá e remove artefatos de compressão JPEG usando modelos neurais **Real-ESRGAN** (*RealESRGAN_x4plus_anime_6B*).
+- 📚 **Divisão Comercial & Metadados Oficiais**:
+  - Consulta automática à API do **MangaDex** e **AniList** para identificar o número oficial de volumes e capítulos da obra.
+  - Baixa automaticamente as **capas oficiais em alta definição** de cada volume.
+  - Injeta metadados comerciais **`ComicInfo.xml`** com título oficial, autores e orientação de leitura da direita para a esquerda.
+- 🎯 **Detecção 100% Autônoma**: O Kira descobre o título da obra e o formato dos arquivos sozinho, sem exigir que você digite nomes ou configure parâmetros manuais.
+- 📱 **Otimização Perfeita para e-Ink**: Adaptado para Kindle Paperwhite, Oasis, Scribe e Básico, com algoritmo de dithering, balanço de contraste/gama e suporte nativo ao serviço **Send to Kindle Web** (`.epub`).
+- ⚡ **Orquestração na Nuvem (`kira colab-run`)**: Dispare o processamento em GPUs gratuitas do **Google Colab** diretamente pelo seu terminal local com apenas um comando e desligamento automático da VM.
+
+---
+
+## 🏗️ Como Funciona o Pipeline
+
+```mermaid
+flowchart LR
+    A["📦 Entrada\n(.cbz, .zip, .rar ou pastas)"] --> B["🔍 Extração & Detecção\n(MangaExtractor)"]
+    B --> C["🌐 Metadados & Capas HD\n(AniList & MangaDex)"]
+    C --> D["📚 Organização Comercial\n(VolumeMerger + ComicInfo.xml)"]
+    D --> E["🤖 Upscale com IA\n(Real-ESRGAN / PyTorch)"]
+    E --> F["📱 Otimização e-Ink\n(KindleConverter / KCC)"]
+    F --> G["📖 E-book Pronto\n(.epub para Send to Kindle)"]
 ```
-┌───────────────────────────┐
-│ Google Drive / Local      │ (Arquivos .cbz, .zip, .cbr, .rar ou pastas de imagens)
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│  Manga Extractor          │ (Extração e ordenação natural numérica das páginas)
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│ Real-ESRGAN Upscaler      │ (Upscale 4x com IA treinada para mangás em GPU Colab)
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│  Kindle Converter (KCC)   │ (Ajuste de margens, gamma, resolução de tela e RTL)
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│ Arquivo Final (.epub/.mobi│ (Salvo no Google Drive em MyDrive/Kindle_Outputs)
-└───────────────────────────┘
-```
 
 ---
 
-## 🚀 Como Usar no Google Colab (Recomendado)
-
-O Google Colab oferece **GPUs gratuitas (T4 / P100)** que tornam o upscale por Inteligência Artificial extremamente rápido.
-
-1. Abra o notebook [Kira_Manga_Pipeline.ipynb](Kira_Manga_Pipeline.ipynb) no Google Colab clicando no botão **Open in Colab** no topo deste README.
-2. Ative a GPU no Colab: `Ambiente de execução` -> `Alterar tipo de ambiente de execução` -> Selecione **GPU T4**.
-3. Crie uma pasta no seu Google Drive (ex: `Manga_Inputs`) e coloque os arquivos `.cbz` do seu mangá lá.
-4. Execute as células do Notebook:
-   - **Passo 1**: Conectar seu Google Drive (`drive.mount('/content/drive')`).
-   - **Passo 2**: Instalar dependências automáticas.
-   - **Passo 3**: Definir suas preferências no formulário interativo e clicar em **Executar**.
-
-Os arquivos convertidos prontos para ler no Kindle serão salvos automaticamente na pasta `Kindle_Outputs` do seu Google Drive!
-
----
-
-## 💻 Como Usar Localmente (CLI)
-
-### Instalação
+## 🚀 Instalação Rápida
 
 ```bash
-# Clonar o repositório
+# 1. Clonar o repositório
 git clone https://github.com/Wather17/kira.git
 cd kira
 
-# Instalar o pacote Kira em modo editável
+# 2. Criar ambiente virtual
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Instalar o Kira CLI
 pip install -e .
 ```
 
-### Comandos Principais
+---
 
-#### 1. Processar Mangás (Upscale + Conversão Kindle)
+## 💡 Exemplos de Uso
+
+### 1. Processamento Local
 ```bash
-kira process -i ~/Downloads/meus_mangas -o ~/Documentos/Kindle_Prontos --profile KPW5 --format EPUB
+# Processar um volume para Kindle Paperwhite 5
+kira process -i "./mangas/Monster_Vol_01.cbz" -o "./kindle_pronto" -p KPW5 -f EPUB
+
+# Processar pasta com múltiplos mangás em lote
+kira process -i "./Manga_Inputs" -o "./Kindle_Outputs" -p KPW5 -f EPUB
 ```
 
-#### 2. Opções e Parâmetros da CLI
-- `-i, --input`: Arquivo `.cbz` individual ou pasta contendo múltiplos arquivos/pastas.
-- `-o, --output`: Pasta onde os arquivos finais para Kindle serão salvos.
-- `-m, --model`: Modelo Real-ESRGAN (`RealESRGAN_x4plus_anime_6B` [padrão], `realesr-animevideov3`, `RealESRGAN_x4plus`).
-- `-p, --profile`: Perfil do modelo do Kindle:
-  - `KPW5`: Kindle Paperwhite 5 (11ª Geração, 6.8") [Padrão]
-  - `KPW3`: Kindle Paperwhite 3/4 (6")
-  - `KO`: Kindle Oasis (1/2/3)
-  - `KS`: Kindle Scribe (10.2")
-  - `K11`: Kindle Basic (11ª Geração - 2022)
-  - `KV`: Kindle Voyage
-- `-f, --format`: Formato de saída (`EPUB` [Recomendado para Send-to-Kindle], `MOBI`, `AZW3`, `CBZ`).
-- `--gamma`: Ajuste de contraste para telas e-ink (padrão `1.0`, use `1.2` para escurecer traços).
-- `--tile`: Tamanho do tile GPU para economizar VRAM (padrão `400`).
-
-#### 3. Verificar Status do Ambiente
+### 2. Execução Remota na GPU do Google Colab
+Dispare o pipeline completo na nuvem do Google Colab sem abrir navegador:
 ```bash
-kira info
+kira colab-run -i "Manga_Inputs" -o "Kindle_Outputs" --gpu T4
+```
+
+### 3. Unir Capítulos Avulsos em Volumes Oficiais
+```bash
+kira merge-volumes -i "./capitulos_soltos" -o "./volumes_comerciais"
 ```
 
 ---
 
-## ⚡ Google Colab CLI (`colab`)
+## 📚 Documentação Completa
 
-O **Google Colab CLI** (`google-colab-cli`) é a ferramenta oficial do Google que permite controlar instâncias de GPU/TPU do Colab diretamente pelo terminal da sua máquina local!
+Toda a documentação detalhada do projeto está organizada na pasta [`docs/`](docs/):
 
-### Instalação
-
-```bash
-pip install google-colab-cli
-```
-
-### Execução Remota Automatizada com `kira colab-run`
-
-Você pode disparar o pipeline completo na GPU T4 do Colab diretamente pelo terminal local com um único comando:
-
-```bash
-kira colab-run -i Manga_Inputs -o Kindle_Outputs --gpu T4
-```
-
-O Kira vai alocar a GPU remota, montar o seu Google Drive, executar o upscale e a conversão para Kindle, transmitir o progresso em tempo real no seu terminal e **desligar a VM automaticamente** ao terminar!
+| Guia | Descrição |
+| :--- | :--- |
+| 🚀 [**Início Rápido (Getting Started)**](docs/getting_started.md) | Passo a passo de instalação no Linux, WSL2, macOS e Windows. |
+| 📖 [**Manual da Linha de Comando (CLI)**](docs/cli_reference.md) | Referência completa de todos os subcomandos, parâmetros e flags do `kira`. |
+| ⚡ [**Guia do Google Colab & MCP**](docs/google_colab_guide.md) | Como utilizar GPUs remotas (T4/L4/A100), Notebook interativo e Colab MCP Server. |
+| 📱 [**Guia de Otimização Kindle**](docs/kindle_guide.md) | Tabela de resoluções de tela, e-Ink dithering, envio via *Send to Kindle Web* e capas na tela de bloqueio. |
+| 🏛️ [**Arquitetura & Engenharia**](docs/architecture.md) | Decisões técnicas de design, otimização de VRAM, resiliência de rede e conformidade com padrões da indústria. |
+| 🛠️ [**Solução de Problemas (Troubleshooting)**](docs/troubleshooting.md) | Resolução de dúvidas frequentes, erros de memória CUDA e tratamento de falhas. |
 
 ---
 
+## 📱 Dispositivos Kindle Suportados
 
-## 🧪 Testes
+| Perfil | Modelo do Leitor | Resolução Ideal |
+| :--- | :--- | :--- |
+| **`KPW5`** *(Padrão)* | Kindle Paperwhite 11ª Geração (6.8") | **1236 × 1680** (300 PPI) |
+| **`KO`** | Kindle Oasis 2 e 3 (7.0") | **1264 × 1680** (300 PPI) |
+| **`KS`** | Kindle Scribe (10.2") | **1860 × 2480** (300 PPI) |
+| **`K11`** | Kindle Básico 11ª Geração (6.0") | **1072 × 1448** (300 PPI) |
+| **`KPW3`** | Kindle Paperwhite 3 e 4 (6.0") | **1072 × 1448** (300 PPI) |
+| **`KV`** | Kindle Voyage (6.0") | **1072 × 1448** (300 PPI) |
+| **`OTHER`** | Outros e-readers / Tablets | Proporcional |
 
-Para rodar os testes automatizados da biblioteca:
+---
+
+## 🧪 Testes Automatizados
+
+O Kira conta com uma suíte abrangente de testes unitários para garantir a confiabilidade de todos os módulos:
 
 ```bash
 pytest tests/
+```
+```
+============================== 16 passed in 9.80s ==============================
 ```
 
 ---
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a licença [MIT](LICENSE).
-
+Distribuído sob a licença MIT. Consulte o arquivo de licença para obter mais informações.
