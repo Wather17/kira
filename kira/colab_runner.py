@@ -59,10 +59,12 @@ def run_pipeline_on_colab(
 
         remote_script = (
             f"import os, sys; "
+            f"os.system('apt-get update -qq && apt-get install -y -qq p7zip-full unrar'); "
             f"os.system('pip install -q git+https://github.com/Wather17/kira.git'); "
             f"os.system('kira process -i \"/content/drive/MyDrive/{input_path}\" "
             f"-o \"/content/drive/MyDrive/{output_dir}\" -m \"{model}\" -p \"{profile}\" -f \"{output_format}\"');"
         )
+
 
         cmd_exec = [colab_bin, "exec", "-s", session_name, remote_script]
         proc = subprocess.Popen(cmd_exec, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
