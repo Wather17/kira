@@ -27,7 +27,7 @@ class KindleConverter:
 
     def __init__(
         self,
-        profile: str = 'KPW5',
+        profile: str = 'K11',
         output_format: str = 'EPUB',
         manga_style: bool = True,
         gamma: float = 1.0,
@@ -37,7 +37,8 @@ class KindleConverter:
         webtoon: bool = False,
         color: bool = False,
     ):
-        self.profile = profile if profile in KINDLE_PROFILES else 'KPW5'
+        self.profile = profile if profile in KINDLE_PROFILES else 'K11'
+
         self.output_format = output_format.upper() if output_format.upper() in OUTPUT_FORMATS else 'EPUB'
         self.manga_style = manga_style
         self.gamma = gamma

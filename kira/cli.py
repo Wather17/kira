@@ -27,7 +27,8 @@ def cli():
 @click.option("-i", "--input", "input_path", required=True, type=str, help="Input CBZ/ZIP file or folder containing manga archives.")
 @click.option("-o", "--output", "output_dir", required=True, type=str, help="Output directory for processed Kindle files.")
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
-@click.option("-p", "--profile", default="KPW5", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle model profile.")
+@click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle model profile.")
+
 @click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
 @click.option("--gamma", default=1.0, type=float, help="Gamma correction factor for e-ink contrast.")
 @click.option("--grayscale/--color", default=False, help="Convert images to grayscale mode for e-ink.")
@@ -162,7 +163,8 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
 @click.option("-o", "--output", "output_dir", required=True, type=str, help="Output folder in Google Drive (e.g. Kindle_Outputs).")
 @click.option("--gpu", default="T4", type=click.Choice(["T4", "L4", "A100"]), help="Google Colab GPU accelerator type.")
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
-@click.option("-p", "--profile", default="KPW5", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle profile.")
+@click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle profile.")
+
 @click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
 @click.option("--session-name", default="kira-remote", type=str, help="Colab session name.")
 @click.option("--auto-stop/--no-stop", default=True, help="Automatically release GPU session after processing finishes.")

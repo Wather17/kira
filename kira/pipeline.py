@@ -32,8 +32,9 @@ class MangaPipeline:
         grayscale: bool = False,
         max_dimension: Optional[int] = 2400,
         # Kindle Converter params
-        kindle_profile: str = 'KPW5',
+        kindle_profile: str = 'K11',
         output_format: str = 'EPUB',
+
         manga_style: bool = True,
         gamma: float = 1.0,
         hq: bool = True,
