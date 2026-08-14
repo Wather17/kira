@@ -28,7 +28,7 @@ class KindleConverter:
     def __init__(
         self,
         profile: str = 'K11',
-        output_format: str = 'EPUB',
+        output_format: str = 'AZW3',
         manga_style: bool = True,
         gamma: float = 1.0,
         hq: bool = True,
@@ -38,8 +38,8 @@ class KindleConverter:
         color: bool = False,
     ):
         self.profile = profile if profile in KINDLE_PROFILES else 'K11'
+        self.output_format = output_format.upper() if output_format.upper() in OUTPUT_FORMATS else 'AZW3'
 
-        self.output_format = output_format.upper() if output_format.upper() in OUTPUT_FORMATS else 'EPUB'
         self.manga_style = manga_style
         self.gamma = gamma
         self.hq = hq

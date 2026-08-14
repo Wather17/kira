@@ -29,7 +29,8 @@ def cli():
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
 @click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle model profile.")
 
-@click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
+@click.option("-f", "--format", "output_format", default="AZW3", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
+
 @click.option("--gamma", default=1.0, type=float, help="Gamma correction factor for e-ink contrast.")
 @click.option("--grayscale/--color", default=False, help="Convert images to grayscale mode for e-ink.")
 @click.option("--tile", default=400, type=int, help="Tile size for Real-ESRGAN GPU upscaling (prevents OOM).")
@@ -165,7 +166,8 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
 @click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle profile.")
 
-@click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
+@click.option("-f", "--format", "output_format", default="AZW3", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
+
 @click.option("--session-name", default="kira-remote", type=str, help="Colab session name.")
 @click.option("--auto-stop/--no-stop", default=True, help="Automatically release GPU session after processing finishes.")
 def colab_run(

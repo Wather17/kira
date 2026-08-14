@@ -33,9 +33,9 @@ class MangaPipeline:
         max_dimension: Optional[int] = 2400,
         # Kindle Converter params
         kindle_profile: str = 'K11',
-        output_format: str = 'EPUB',
-
+        output_format: str = 'AZW3',
         manga_style: bool = True,
+
         gamma: float = 1.0,
         hq: bool = True,
         # Pipeline options

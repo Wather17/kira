@@ -21,9 +21,9 @@ def run_pipeline_on_colab(
     gpu: str = "T4",
     model: str = "RealESRGAN_x4plus_anime_6B",
     profile: str = "K11",
-    output_format: str = "EPUB",
-
+    output_format: str = "AZW3",
     session_name: str = "kira-remote",
+
     auto_stop: bool = True
 ) -> bool:
     """
