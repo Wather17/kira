@@ -57,29 +57,42 @@ def run_pipeline_on_colab(
         # Step 3: Run pipeline remotely on GPU VM
         console.print(f"[bold cyan][Kira Remote][/bold cyan] Executing Kira Pipeline for '{input_path}' -> '{output_dir}'...")
 
-        remote_script = (
-            f"import os, sys; "
-            f"os.system('apt-get update -qq && apt-get install -y -qq p7zip-full unrar'); "
-            f"os.system('pip install -q git+https://github.com/Wather17/kira.git'); "
-            f"os.system('kira process -i \"/content/drive/MyDrive/{input_path}\" "
-            f"-o \"/content/drive/MyDrive/{output_dir}\" -m \"{model}\" -p \"{profile}\" -f \"{output_format}\"');"
-        )
+        import tempfile
+        script_code = f"""
+import os, sys
 
+print('[Remote Colab Worker] Installing system packages & latest Kira...')
+os.system('apt-get update -qq && apt-get install -y -qq p7zip-full unrar > /dev/null 2>&1')
+os.system('pip install -q git+https://github.com/Wather17/kira.git')
 
-        cmd_exec = [colab_bin, "exec", "-s", session_name, remote_script]
-        proc = subprocess.Popen(cmd_exec, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+print('[Remote Colab Worker] Running Kira Manga Pipeline...')
+exit_code = os.system('kira process -i "/content/drive/MyDrive/{input_path}" -o "/content/drive/MyDrive/{output_dir}" -m "{model}" -p "{profile}" -f "{output_format}"')
+if exit_code != 0:
+    sys.exit(1)
+"""
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+            f.write(script_code)
+            temp_script_path = f.name
 
-        if proc.stdout:
-            for line in iter(proc.stdout.readline, ""):
-                print(line, end="")
-        proc.wait()
+        try:
+            cmd_exec = [colab_bin, "exec", "-s", session_name, "-f", temp_script_path, "--timeout", "86400"]
+            proc = subprocess.Popen(cmd_exec, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
-        if proc.returncode == 0:
-            console.print(f"[bold green]✓ Kira Remote processing complete for '{session_name}'![/bold green]")
-            return True
-        else:
-            console.print(f"[bold red]✗ Remote processing exited with code {proc.returncode}[/bold red]")
-            return False
+            if proc.stdout:
+                for line in iter(proc.stdout.readline, ""):
+                    print(line, end="")
+            proc.wait()
+
+            if proc.returncode == 0:
+                console.print(f"[bold green]✓ Kira Remote processing complete for '{session_name}'![/bold green]")
+                return True
+            else:
+                console.print(f"[bold red]✗ Remote processing exited with code {proc.returncode}[/bold red]")
+                return False
+        finally:
+            if os.path.exists(temp_script_path):
+                os.remove(temp_script_path)
+
 
     finally:
         if auto_stop:
