@@ -12,6 +12,7 @@ from kira.converter import KindleConverter
 from kira.merger import VolumeMerger, AOT_VOLUME_MAPPING
 from kira.metadata import MangaMetadata, set_custom_cover, optimize_volume_structure
 from kira.providers import OnlineMangaProvider
+from kira.colab_runner import run_pipeline_on_colab
 
 __all__ = [
     "MangaPipeline",
@@ -24,7 +25,9 @@ __all__ = [
     "set_custom_cover",
     "optimize_volume_structure",
     "OnlineMangaProvider",
+    "run_pipeline_on_colab",
 ]
+
 
 
 

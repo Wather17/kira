@@ -156,7 +156,43 @@ def merge_volumes(input_dir: str, output_dir: str, title: str, mapping: Optional
     console.print(f"\n[bold green]Successfully created {len(merged_files)} Volume CBZ files in {out}[/bold green]")
 
 
+@cli.command(name="colab-run")
+@click.option("-i", "--input", "input_path", required=True, type=str, help="Input folder/file in Google Drive (e.g. Manga_Inputs).")
+@click.option("-o", "--output", "output_dir", required=True, type=str, help="Output folder in Google Drive (e.g. Kindle_Outputs).")
+@click.option("--gpu", default="T4", type=click.Choice(["T4", "L4", "A100"]), help="Google Colab GPU accelerator type.")
+@click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
+@click.option("-p", "--profile", default="KPW5", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle profile.")
+@click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
+@click.option("--session-name", default="kira-remote", type=str, help="Colab session name.")
+@click.option("--auto-stop/--no-stop", default=True, help="Automatically release GPU session after processing finishes.")
+def colab_run(
+    input_path: str,
+    output_dir: str,
+    gpu: str,
+    model: str,
+    profile: str,
+    output_format: str,
+    session_name: str,
+    auto_stop: bool
+):
+    """Provision a remote Google Colab GPU instance and run the pipeline headlessly."""
+    from kira.colab_runner import run_pipeline_on_colab
+    success = run_pipeline_on_colab(
+        input_path=input_path,
+        output_dir=output_dir,
+        gpu=gpu,
+        model=model,
+        profile=profile,
+        output_format=output_format,
+        session_name=session_name,
+        auto_stop=auto_stop
+    )
+    if not success:
+        sys.exit(1)
+
+
 @cli.command(name="colab-setup")
+
 def colab_setup():
     """Install required dependencies inside a Google Colab notebook environment."""
     console.print("[bold cyan]Installing Kira dependencies for Google Colab...[/bold cyan]")

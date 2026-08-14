@@ -110,32 +110,18 @@ O **Google Colab CLI** (`google-colab-cli`) é a ferramenta oficial do Google qu
 pip install google-colab-cli
 ```
 
-### Principais Comandos
+### Execução Remota Automatizada com `kira colab-run`
 
-- **Autenticar e criar uma nova VM**:
-  ```bash
-  colab new
-  ```
-- **Executar código Python remotamente na GPU do Colab**:
-  ```bash
-  colab exec "import kira; print('Kira rodando na GPU do Colab!')"
-  ```
-- **Rodar um pipeline completo e liberar a VM ao terminar**:
-  ```bash
-  colab run script.py
-  ```
-- **Fazer upload/download de arquivos da VM do Colab**:
-  ```bash
-  colab upload ./Attack_on_Titan_Vol_01.cbz
-  colab download ./Attack_on_Titan_Vol_01.epub
-  ```
-- **Listar sessões ativas e encerrar**:
-  ```bash
-  colab sessions
-  colab stop
-  ```
+Você pode disparar o pipeline completo na GPU T4 do Colab diretamente pelo terminal local com um único comando:
+
+```bash
+kira colab-run -i Manga_Inputs -o Kindle_Outputs --gpu T4
+```
+
+O Kira vai alocar a GPU remota, montar o seu Google Drive, executar o upscale e a conversão para Kindle, transmitir o progresso em tempo real no seu terminal e **desligar a VM automaticamente** ao terminar!
 
 ---
+
 
 ## 🧪 Testes
 
