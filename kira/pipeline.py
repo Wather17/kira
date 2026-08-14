@@ -1,9 +1,11 @@
 import os
+import re
 import shutil
 import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
 
 from kira.converter import KindleConverter
 from kira.extractor import MangaExtractor
@@ -89,7 +91,28 @@ class MangaPipeline:
 
         try:
             # 1. Extract
-            _, raw_images = extractor.extract(input_path)
+            extracted_path, raw_images = extractor.extract(input_path)
+
+            # Check if extracted archive was a bundle containing multiple chapters
+            nested_items = [
+                f for f in extracted_path.iterdir()
+                if (f.is_file() and f.suffix.lower() in SUPPORTED_ARCHIVE_EXTS) or
+                   (f.is_dir() and get_image_files(f, recursive=False))
+            ]
+            has_direct_images = bool(get_image_files(extracted_path, recursive=False))
+
+            if not has_direct_images and len(nested_items) >= 2:
+                print(f"[Kira Pipeline] '{input_path.name}' is a chapter bundle ({len(nested_items)} chapters). Auto-merging into official volumes...")
+                from kira.merger import VolumeMerger
+                merger = VolumeMerger()
+                merged_vols_dir = work_dir / "merged_volumes"
+                volume_files = merger.merge_all_volumes(extracted_path, merged_vols_dir)
+                last_stat = {}
+                for vol_idx, vol_file in enumerate(volume_files, 1):
+                    print(f"\n[Kira Pipeline] Processing Auto-Merged Volume [{vol_idx}/{len(volume_files)}]: {vol_file.name}")
+                    last_stat = self.process_item(vol_file, out_dir)
+                return last_stat
+
             page_count = len(raw_images)
             print(f"[Kira Pipeline] Extracted {page_count} pages.")
 
@@ -160,6 +183,17 @@ class MangaPipeline:
             print(f"[Kira Pipeline Warning] No manga archives or image folders found in {in_path}")
             return []
 
+        # Check if the folder contains loose chapters that should be merged into volumes first
+        is_chapters = any(re.search(r"(?:ch|chapter|cap|c)[\s_\-\.]*\d+", item.name, re.IGNORECASE) for item in items_to_process)
+        if is_chapters and len(items_to_process) >= 2:
+            print(f"\n[Kira Pipeline] Detected {len(items_to_process)} chapter files in {in_path}. Auto-merging into official volumes with covers & metadata...")
+            from kira.merger import VolumeMerger
+            merger = VolumeMerger()
+            merged_vols_dir = Path(tempfile.mkdtemp(prefix="kira_auto_merged_vols_"))
+            volume_files = merger.merge_all_volumes(in_path, merged_vols_dir)
+            if volume_files:
+                items_to_process = volume_files
+
         print(f"\n==================================================")
         print(f" Kira Manga Pipeline - Batch Processing ({len(items_to_process)} items)")
         print(f" Input:  {in_path}")
@@ -173,8 +207,10 @@ class MangaPipeline:
             print(f"\n--- Processing Item [{idx}/{len(items_to_process)}]: {item.name} ---")
             try:
                 stat = self.process_item(item, out_path)
-                results.append(stat)
+                if stat:
+                    results.append(stat)
             except Exception as e:
                 print(f"[Kira Pipeline Error] Failed to process '{item.name}': {e}")
 
         return results
+
