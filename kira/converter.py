@@ -113,15 +113,15 @@ class KindleConverter:
             cmd = [self.kcc_bin]
 
         # KCC CLI Flags
+        kcc_format = 'MOBI' if self.output_format.upper() in ('AZW3', 'MOBI') else self.output_format.upper()
         cmd.extend(['-p', self.profile])
-        cmd.extend(['-f', self.output_format])
+        cmd.extend(['-f', kcc_format])
         cmd.extend(['-o', str(output_dir)])
         cmd.extend(['-t', title])
         cmd.extend(['--metadatatitle', '2'])
-        cmd.append('--keepcomicinfo')
+        cmd.extend(['--keepcomicinfo', '1'])
 
         if self.manga_style:
-
             cmd.append('-m')  # Right-to-Left reading order for manga
         if self.hq:
             cmd.append('--hq') # High Quality double-page spread splitting
@@ -153,20 +153,16 @@ class KindleConverter:
         if target_file.exists():
             return target_file
 
-        # Check for any created output file matching expected_ext or input_path name
-        for cand_name in [input_path.stem, input_path.name, "upscaled"]:
-            candidate = output_dir / f"{cand_name}{expected_ext}"
-            if candidate.exists():
-                if candidate != target_file:
-                    shutil.move(candidate, target_file)
-                return target_file
-
-        # Check any newly created file with expected extension in output_dir
-        for f in output_dir.glob(f"*{expected_ext}"):
-            if f.is_file():
-                if f != target_file:
-                    shutil.move(f, target_file)
-                return target_file
+        # Check for generated files (.azw3, .mobi, .epub, .cbz)
+        for ext in [expected_ext, '.mobi', '.azw3', '.epub', '.kepub.epub', '.cbz']:
+            for cand_name in [title, input_path.stem, input_path.name, "upscaled"]:
+                cand = output_dir / f"{cand_name}{ext}"
+                if cand.exists():
+                    desired_file = output_dir / f"{title}{cand.suffix}"
+                    if cand != desired_file:
+                        shutil.move(cand, desired_file)
+                        return desired_file
+                    return cand
 
         # Fallback check
         matches = [f for f in output_dir.glob(f"{title}*") if f.is_file()]
@@ -174,6 +170,7 @@ class KindleConverter:
             return matches[0]
 
         return target_file
+
 
 
 

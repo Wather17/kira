@@ -55,10 +55,23 @@ class MangaExtractor:
             self._extract_rar(source, target_dir)
 
         images = get_image_files(target_dir)
-        if not images:
-            raise ValueError(f"Extracted archive {source} contained no valid images.")
+        
+        # Check for single nested directory wrapper (e.g. Attack on Titan/...)
+        children = list(target_dir.iterdir())
+        if len(children) == 1 and children[0].is_dir():
+            target_dir = children[0]
+            images = get_image_files(target_dir)
+
+        # Check for nested chapter archives
+        nested_archives = [
+            f for f in target_dir.rglob("*")
+            if f.is_file() and f.suffix.lower() in SUPPORTED_ARCHIVE_EXTS
+        ]
+        if not images and not nested_archives:
+            raise ValueError(f"Extracted archive {source} contained no valid images or chapter archives.")
 
         return target_dir, images
+
 
     def _extract_zip(self, zip_path: Path, output_dir: Path) -> None:
         """Extract ZIP / CBZ archive using Python built-in zipfile."""

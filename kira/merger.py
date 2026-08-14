@@ -123,7 +123,11 @@ class VolumeMerger:
         pat_sub = rf"(?:ch|chapter|cap|capitulo)[\s_\-\.]*0*{chapter_num}\.\d+"
         pat_num = rf"\b0*{chapter_num}\b"
 
-        for item in natural_sort_filenames(list(chapters_dir.iterdir())):
+        candidates = list(chapters_dir.iterdir())
+        if any(c.is_dir() for c in candidates):
+            candidates = [f for f in chapters_dir.rglob("*") if (f.is_file() and f.suffix.lower() in ('.cbz', '.zip', '.cbr', '.rar')) or f.is_dir()]
+
+        for item in natural_sort_filenames(candidates):
             name_lower = item.name.lower()
             if re.search(pat_exact, name_lower) or re.search(pat_num, name_lower):
                 matches.append(item)
@@ -131,6 +135,7 @@ class VolumeMerger:
                 matches.append(item)
 
         return matches
+
 
 
     def merge_volume(
