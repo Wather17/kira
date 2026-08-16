@@ -59,7 +59,7 @@ class MangaUpscaler:
         max_dimension: Optional[int] = 2400,
         weights_dir: Optional[Union[str, Path]] = None,
         verbose: bool = False,
-        workers: int = 1,
+        workers: int = 2,
     ):
         self.model_name = model_name if model_name in MODEL_URLS else 'RealESRGAN_x4plus_anime_6B'
         self.scale = scale

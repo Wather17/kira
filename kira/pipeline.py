@@ -42,7 +42,7 @@ class MangaPipeline:
         keep_extracted: bool = False,
         keep_upscaled_cbz: bool = True,
         verbose: bool = False,
-        workers: int = 1,
+        workers: int = 2,
     ):
         self.upscaler = MangaUpscaler(
             model_name=model_name,

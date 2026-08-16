@@ -37,7 +37,7 @@ def cli():
 @click.option("--device", default=None, type=str, help="Device to run upscaling on (cuda, cpu, mps).")
 @click.option("--max-dim", default=2400, type=int, help="Maximum image dimension limit (pixels).")
 @click.option("--keep-cbz/--no-cbz", default=True, help="Save upscaled CBZ archive alongside Kindle file.")
-@click.option("-w", "--workers", default=1, type=int, help="Number of concurrent worker threads for page upscaling (recommended 2 on GPUs >= 8GB VRAM).")
+@click.option("-w", "--workers", default=2, type=int, help="Number of concurrent worker threads for page upscaling (default: 2).")
 @click.option("-v", "--verbose", is_flag=True, default=False, help="Show verbose output (including Real-ESRGAN tile logs).")
 def process(
     input_path: str,
