@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 import yaml
+from tqdm import tqdm
 
 from kira.extractor import MangaExtractor
 from kira.utils import create_cbz_archive, get_image_files, natural_sort_filenames
@@ -143,7 +144,8 @@ class VolumeMerger:
         volume_num: int,
         chapter_nums: List[int],
         chapters_dir: Union[str, Path],
-        output_dir: Union[str, Path]
+        output_dir: Union[str, Path],
+        verbose: bool = True
     ) -> Optional[Path]:
         """
         Merge a set of chapter files/folders into a single volume CBZ archive.
@@ -155,7 +157,6 @@ class VolumeMerger:
         from kira.utils import get_safe_temp_dir
         vol_temp = get_safe_temp_dir(f"vol_{volume_num:02d}")
 
-
         try:
             global_page_idx = 1
             found_chapters = 0
@@ -163,7 +164,6 @@ class VolumeMerger:
             for ch_num in chapter_nums:
                 ch_files = self.find_chapter_files(chapters_path, ch_num)
                 if not ch_files:
-                    print(f"[Kira Merger Warning] Chapter {ch_num} for Volume {volume_num} not found in {chapters_path}")
                     continue
 
                 for ch_file in ch_files:
@@ -177,9 +177,9 @@ class VolumeMerger:
                         shutil.copy2(img_path, vol_temp / target_name)
                         global_page_idx += 1
 
-
             if found_chapters == 0:
-                print(f"[Kira Merger] Skipping Volume {volume_num:02d}: No matching chapter files found.")
+                if verbose:
+                    print(f"[Kira Merger] Skipping Volume {volume_num:02d}: No matching chapter files found.")
                 return None
 
             # Apply commercial Kindle metadata and cover optimization before archiving
@@ -198,7 +198,6 @@ class VolumeMerger:
                 cover_file = vol_temp / "0000_cover.jpg"
                 OnlineMangaProvider.download_image(cover_url, cover_file)
 
-
             optimize_volume_structure(
                 vol_temp,
                 series_name=self.manga_title,
@@ -207,12 +206,12 @@ class VolumeMerger:
                 custom_cover=cover_file if (cover_file and cover_file.exists()) else None
             )
 
-
             vol_name = f"{self.manga_title}_Vol_{volume_num:02d}.cbz"
             output_cbz = out_path / vol_name
             res = create_cbz_archive(vol_temp, output_cbz)
 
-            print(f"[Kira Merger] Created {vol_name} ({global_page_idx - 1} pages from {found_chapters} chapters)")
+            if verbose:
+                print(f"[Kira Merger] Created {vol_name} ({global_page_idx - 1} pages from {found_chapters} chapters)")
             return res
 
         finally:
@@ -246,10 +245,14 @@ class VolumeMerger:
             vol_map = mapping
 
         output_files = []
-        for vol_num, ch_list in vol_map.items():
-            cbz_res = self.merge_volume(vol_num, ch_list, chapters_dir, output_dir)
+        pbar = tqdm(vol_map.items(), desc="Merging Official Volumes", unit="vol")
+        for vol_num, ch_list in pbar:
+            pbar.set_postfix_str(f"Vol {vol_num:02d}")
+            cbz_res = self.merge_volume(vol_num, ch_list, chapters_dir, output_dir, verbose=False)
             if cbz_res:
                 output_files.append(cbz_res)
+        pbar.close()
 
+        print(f"[Kira Merger] Successfully merged {len(output_files)} volumes for '{self.manga_title}'.")
         return output_files
 
