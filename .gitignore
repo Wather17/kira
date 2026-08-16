@@ -39,3 +39,6 @@ htmlcov/
 # Local data / scratch
 scratch/
 tmp/
+
+openspec/
+.agent/
