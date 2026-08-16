@@ -18,3 +18,19 @@ def test_kindle_converter_fallback():
         res_file = converter.convert(manga_dir, out_dir, title="TestManga")
 
         assert res_file.exists()
+        assert res_file.suffix.lower() == ".cbz"
+
+
+def test_kindle_converter_defaults_and_legacy_mapping():
+    # Default format is EPUB
+    conv_default = KindleConverter()
+    assert conv_default.output_format == "EPUB"
+
+    # AZW3 maps to EPUB
+    conv_azw3 = KindleConverter(output_format="AZW3")
+    assert conv_azw3.output_format == "EPUB"
+
+    # MOBI maps to EPUB
+    conv_mobi = KindleConverter(output_format="MOBI")
+    assert conv_mobi.output_format == "EPUB"
+

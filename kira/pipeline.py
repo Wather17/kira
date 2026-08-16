@@ -33,7 +33,7 @@ class MangaPipeline:
         max_dimension: Optional[int] = 2400,
         # Kindle Converter params
         kindle_profile: str = 'K11',
-        output_format: str = 'AZW3',
+        output_format: str = 'EPUB',
         manga_style: bool = True,
 
         gamma: float = 1.0,
@@ -41,6 +41,8 @@ class MangaPipeline:
         # Pipeline options
         keep_extracted: bool = False,
         keep_upscaled_cbz: bool = True,
+        verbose: bool = False,
+        workers: int = 1,
     ):
         self.upscaler = MangaUpscaler(
             model_name=model_name,
@@ -50,6 +52,8 @@ class MangaPipeline:
             device=device,
             grayscale=grayscale,
             max_dimension=max_dimension,
+            verbose=verbose,
+            workers=workers,
         )
 
         self.converter = KindleConverter(

@@ -4,6 +4,7 @@ import sys
 import shutil
 import subprocess
 import zipfile
+import contextlib
 
 from pathlib import Path
 from typing import List, Union
@@ -11,6 +12,24 @@ from natsort import natsorted
 
 SUPPORTED_IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff')
 SUPPORTED_ARCHIVE_EXTS = ('.cbz', '.zip', '.cbr', '.rar')
+
+
+@contextlib.contextmanager
+def suppress_stdout_stderr(enabled: bool = True):
+    """Suppress stdout and stderr at Python level when enabled (useful for noisy libraries like Real-ESRGAN)."""
+    if not enabled:
+        yield
+        return
+    with open(os.devnull, 'w') as devnull:
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        try:
+            sys.stdout = devnull
+            sys.stderr = devnull
+            yield
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
 
 def is_colab() -> bool:

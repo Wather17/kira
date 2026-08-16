@@ -23,7 +23,8 @@ def run_pipeline_on_colab(
     profile: str = "K11",
     output_format: str = "AZW3",
     session_name: str = "kira-remote",
-
+    tile: int = 600,
+    workers: int = 2,
     auto_stop: bool = True
 ) -> bool:
     """
@@ -36,7 +37,7 @@ def run_pipeline_on_colab(
         console.print("Run `pip install google-colab-cli` or check PATH.")
         return False
 
-    console.print(f"[bold cyan][Kira Remote][/bold cyan] Initializing Colab GPU Session: [yellow]{session_name}[/yellow] (GPU: [green]{gpu}[/green])...")
+    console.print(f"[bold cyan][Kira Remote][/bold cyan] Initializing Colab GPU Session: [yellow]{session_name}[/yellow] (GPU: [green]{gpu}[/green], Workers: [magenta]{workers}[/magenta], Tile: [cyan]{tile}[/cyan])...")
 
     # Step 1: Provision / Connect GPU session
     cmd_new = [colab_bin, "new", "-s", session_name, "--gpu", gpu]
@@ -69,8 +70,8 @@ print('[Remote Colab Worker] Installing system packages & latest Kira...')
 os.system('apt-get update -qq && apt-get install -y -qq p7zip-full unrar > /dev/null 2>&1')
 os.system('pip install -q git+https://github.com/Wather17/kira.git')
 
-print('[Remote Colab Worker] Running Kira Manga Pipeline...')
-exit_code = os.system('kira process -i "/content/drive/MyDrive/{input_path}" -o "/content/drive/MyDrive/{output_dir}" -m "{model}" -p "{profile}" -f "{output_format}"')
+print('[Remote Colab Worker] Running Kira Manga Pipeline (High-Performance GPU mode)...')
+exit_code = os.system('kira process -i "/content/drive/MyDrive/{input_path}" -o "/content/drive/MyDrive/{output_dir}" -m "{model}" -p "{profile}" -f "{output_format}" --tile {tile} --workers {workers}')
 if exit_code != 0:
     sys.exit(1)
 """

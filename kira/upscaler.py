@@ -8,6 +8,8 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
+from kira.utils import suppress_stdout_stderr
+
 try:
     import torch
     import torchvision.transforms.functional as F_tf
@@ -56,6 +58,8 @@ class MangaUpscaler:
         grayscale: bool = False,
         max_dimension: Optional[int] = 2400,
         weights_dir: Optional[Union[str, Path]] = None,
+        verbose: bool = False,
+        workers: int = 1,
     ):
         self.model_name = model_name if model_name in MODEL_URLS else 'RealESRGAN_x4plus_anime_6B'
         self.scale = scale
@@ -64,6 +68,8 @@ class MangaUpscaler:
         self.pre_pad = pre_pad
         self.grayscale = grayscale
         self.max_dimension = max_dimension
+        self.verbose = verbose
+        self.workers = max(1, int(workers))
 
         # Select computing device
         if device:
@@ -175,7 +181,8 @@ class MangaUpscaler:
             output = cv2.resize(img, (w * self.scale, h * self.scale), interpolation=cv2.INTER_LANCZOS4)
         else:
             try:
-                output, _ = self.upscaler.enhance(img, outscale=self.scale)
+                with suppress_stdout_stderr(enabled=not self.verbose):
+                    output, _ = self.upscaler.enhance(img, outscale=self.scale)
             except Exception as ex:
                 print(f"[Kira Warning] Real-ESRGAN enhance failed for {input_path.name}: {ex}. Using Lanczos.")
                 h, w = img.shape[:2]
@@ -203,15 +210,41 @@ class MangaUpscaler:
 
 
     def upscale_batch(self, image_paths: List[Path], output_dir: Union[str, Path]) -> List[Path]:
-        """Upscale a batch of image files with progress bar."""
+        """Upscale a batch of image files with progress bar and optional multithreaded concurrency."""
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        results = []
+        if not image_paths:
+            return []
 
-        print(f"[Kira] Processing {len(image_paths)} pages using {self.model_name} (Device: {self.device_str}, FP16: {self.half})...")
-        for img_path in tqdm(image_paths, desc="Upscaling Manga Pages", unit="page"):
-            out_file = output_dir / img_path.name
-            res = self.upscale_image(img_path, out_file)
-            results.append(res)
+        # Pre-load model once before threads start
+        self._load_model()
 
-        return results
+        print(f"[Kira] Processing {len(image_paths)} pages using {self.model_name} (Device: {self.device_str}, FP16: {self.half}, Workers: {self.workers})...")
+        results: List[Optional[Path]] = [None] * len(image_paths)
+
+        if self.workers <= 1:
+            for idx, img_path in enumerate(tqdm(image_paths, desc="Upscaling Manga Pages", unit="page")):
+                out_file = output_dir / img_path.name
+                results[idx] = self.upscale_image(img_path, out_file)
+        else:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            import threading
+
+            pbar = tqdm(total=len(image_paths), desc="Upscaling Manga Pages (Concurrent)", unit="page")
+            lock = threading.Lock()
+
+            def _process_one(index: int, img_p: Path) -> tuple[int, Path]:
+                out_f = output_dir / img_p.name
+                res_path = self.upscale_image(img_p, out_f)
+                with lock:
+                    pbar.update(1)
+                return index, res_path
+
+            with ThreadPoolExecutor(max_workers=self.workers) as executor:
+                futures = [executor.submit(_process_one, i, p) for i, p in enumerate(image_paths)]
+                for fut in as_completed(futures):
+                    idx, res_path = fut.result()
+                    results[idx] = res_path
+            pbar.close()
+
+        return [r for r in results if r is not None]

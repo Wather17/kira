@@ -48,3 +48,28 @@ def test_create_cbz_archive():
 def test_resolve_google_drive_path():
     p = resolve_google_drive_path("manga/vol1")
     assert isinstance(p, Path)
+
+
+def test_suppress_stdout_stderr(capsys):
+    from kira.utils import suppress_stdout_stderr
+    import sys
+
+    # Without suppression
+    print("hello visible")
+    captured = capsys.readouterr()
+    assert "hello visible" in captured.out
+
+    # With suppression enabled
+    with suppress_stdout_stderr(enabled=True):
+        print("Tile 1/12 should be hidden")
+        sys.stderr.write("stderr should be hidden\n")
+    captured = capsys.readouterr()
+    assert "Tile 1/12" not in captured.out
+    assert "stderr should be hidden" not in captured.err
+
+    # With suppression disabled
+    with suppress_stdout_stderr(enabled=False):
+        print("Tile visible")
+    captured = capsys.readouterr()
+    assert "Tile visible" in captured.out
+

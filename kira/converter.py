@@ -19,7 +19,8 @@ KINDLE_PROFILES: Dict[str, str] = {
     'OTHER': 'Generic E-Reader'
 }
 
-OUTPUT_FORMATS = ['EPUB', 'MOBI', 'AZW3', 'CBZ', 'KFX']
+OUTPUT_FORMATS = ['EPUB', 'CBZ', 'KFX']
+LEGACY_FORMATS = {'AZW3': 'EPUB', 'MOBI': 'EPUB'}
 
 
 class KindleConverter:
@@ -28,7 +29,7 @@ class KindleConverter:
     def __init__(
         self,
         profile: str = 'K11',
-        output_format: str = 'AZW3',
+        output_format: str = 'EPUB',
         manga_style: bool = True,
         gamma: float = 1.0,
         hq: bool = True,
@@ -38,7 +39,13 @@ class KindleConverter:
         color: bool = False,
     ):
         self.profile = profile if profile in KINDLE_PROFILES else 'K11'
-        self.output_format = output_format.upper() if output_format.upper() in OUTPUT_FORMATS else 'AZW3'
+        
+        fmt = output_format.upper()
+        if fmt in LEGACY_FORMATS:
+            print(f"[Kira Notice] Format '{fmt}' is deprecated for Kindle (Amazon Send to Kindle requires EPUB). Automatically converting to 'EPUB'.")
+            fmt = LEGACY_FORMATS[fmt]
+
+        self.output_format = fmt if fmt in OUTPUT_FORMATS else 'EPUB'
 
         self.manga_style = manga_style
         self.gamma = gamma
@@ -98,6 +105,10 @@ class KindleConverter:
 
         book_title = title or input_path.stem
 
+        if self.output_format == 'CBZ':
+            print(f"[Kira] Packaging CBZ archive for '{book_title}'...")
+            return self._fallback_cbz_convert(input_path, output_dir, book_title)
+
         if self.kcc_bin:
             return self._convert_with_kcc(input_path, output_dir, book_title)
         else:
@@ -113,7 +124,7 @@ class KindleConverter:
             cmd = [self.kcc_bin]
 
         # KCC CLI Flags
-        kcc_format = 'MOBI' if self.output_format.upper() in ('AZW3', 'MOBI') else self.output_format.upper()
+        kcc_format = self.output_format.upper()
         cmd.extend(['-p', self.profile])
         cmd.extend(['-f', kcc_format])
         cmd.extend(['-o', str(output_dir)])
@@ -143,7 +154,8 @@ class KindleConverter:
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         if res.returncode != 0:
-            print(f"[Kira Warning] KCC returned error: {res.stderr.strip()}")
+            err_msg = res.stderr.strip() or res.stdout.strip()
+            print(f"[Kira Warning] KCC returned error: {err_msg}")
             print("[Kira] Attempting CBZ fallback creation...")
             return self._fallback_cbz_convert(input_path, output_dir, title)
 

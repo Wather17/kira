@@ -29,7 +29,7 @@ def cli():
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
 @click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle model profile.")
 
-@click.option("-f", "--format", "output_format", default="AZW3", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
+@click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "CBZ", "KFX", "AZW3", "MOBI"]), help="Output format (EPUB recommended for Send to Kindle).")
 
 @click.option("--gamma", default=1.0, type=float, help="Gamma correction factor for e-ink contrast.")
 @click.option("--grayscale/--color", default=False, help="Convert images to grayscale mode for e-ink.")
@@ -37,6 +37,8 @@ def cli():
 @click.option("--device", default=None, type=str, help="Device to run upscaling on (cuda, cpu, mps).")
 @click.option("--max-dim", default=2400, type=int, help="Maximum image dimension limit (pixels).")
 @click.option("--keep-cbz/--no-cbz", default=True, help="Save upscaled CBZ archive alongside Kindle file.")
+@click.option("-w", "--workers", default=1, type=int, help="Number of concurrent worker threads for page upscaling (recommended 2 on GPUs >= 8GB VRAM).")
+@click.option("-v", "--verbose", is_flag=True, default=False, help="Show verbose output (including Real-ESRGAN tile logs).")
 def process(
     input_path: str,
     output_dir: str,
@@ -48,7 +50,9 @@ def process(
     tile: int,
     device: str,
     max_dim: int,
-    keep_cbz: bool
+    keep_cbz: bool,
+    workers: int,
+    verbose: bool
 ):
     """Run full pipeline: extract -> Real-ESRGAN upscale -> Kindle adaptation (KCC)."""
     console.print(Panel.fit("[bold magenta]Kira Manga Processing Pipeline[/bold magenta]", border_style="cyan"))
@@ -65,7 +69,9 @@ def process(
         kindle_profile=profile,
         output_format=output_format,
         gamma=gamma,
-        keep_upscaled_cbz=keep_cbz
+        keep_upscaled_cbz=keep_cbz,
+        verbose=verbose,
+        workers=workers
     )
 
     if inp.is_file():
@@ -166,8 +172,9 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
 @click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle profile.")
 
-@click.option("-f", "--format", "output_format", default="AZW3", type=click.Choice(["EPUB", "MOBI", "AZW3", "CBZ", "KFX"]), help="Output format.")
-
+@click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "CBZ", "KFX", "AZW3", "MOBI"]), help="Output format.")
+@click.option("--tile", default=600, type=int, help="Tile size for GPU upscaling (default: 600 for Colab GPU).")
+@click.option("-w", "--workers", default=2, type=int, help="Number of concurrent worker threads (default: 2 for Colab GPU).")
 @click.option("--session-name", default="kira-remote", type=str, help="Colab session name.")
 @click.option("--auto-stop/--no-stop", default=True, help="Automatically release GPU session after processing finishes.")
 def colab_run(
@@ -177,6 +184,8 @@ def colab_run(
     model: str,
     profile: str,
     output_format: str,
+    tile: int,
+    workers: int,
     session_name: str,
     auto_stop: bool
 ):
@@ -189,6 +198,8 @@ def colab_run(
         model=model,
         profile=profile,
         output_format=output_format,
+        tile=tile,
+        workers=workers,
         session_name=session_name,
         auto_stop=auto_stop
     )
