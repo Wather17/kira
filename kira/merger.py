@@ -3,7 +3,7 @@ import re
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 import yaml
 from tqdm import tqdm
 
@@ -152,10 +152,15 @@ class VolumeMerger:
         chapter_nums: List[int],
         chapters_dir: Union[str, Path],
         output_dir: Union[str, Path],
-        verbose: bool = True
+        verbose: bool = True,
+        meta: Optional[Dict[str, Any]] = None,
+        vol_covers: Optional[Dict[int, str]] = None,
     ) -> Optional[Path]:
         """
         Merge a set of chapter files/folders into a single volume CBZ archive.
+
+        `meta` and `vol_covers` are resolved once by `merge_all_volumes` and shared
+        across volumes; when omitted, they are resolved internally (single-volume path).
         """
         chapters_path = Path(chapters_dir).resolve()
         out_path = Path(output_dir).resolve()
@@ -193,13 +198,15 @@ class VolumeMerger:
             from kira.metadata import optimize_volume_structure
             from kira.providers import OnlineMangaProvider
 
-            meta = OnlineMangaProvider.search_manga_metadata(self.manga_title)
+            if meta is None:
+                meta = OnlineMangaProvider.search_manga_metadata(self.manga_title)
             author = meta.get("author", "Unknown") if meta else "Unknown"
-            
+
             # Fetch official volume cover if available
-            vol_covers = OnlineMangaProvider.fetch_volume_covers(self.manga_title)
+            if vol_covers is None:
+                vol_covers = OnlineMangaProvider.fetch_volume_covers(self.manga_title)
             cover_url = vol_covers.get(volume_num) or (meta.get("cover_url") if (meta and volume_num == 1) else None)
-            
+
             cover_file = None
             if cover_url:
                 cover_file = vol_temp / "0000_cover.jpg"
@@ -252,10 +259,30 @@ class VolumeMerger:
             vol_map = mapping
 
         output_files = []
+
+        # Resolve series metadata and volume covers ONCE for the whole run (O(1) per series,
+        # not O(volumes)); failures produce a single warning and merge still proceeds.
+        from kira.providers import OnlineMangaProvider
+        meta = None
+        vol_covers = {}
+        try:
+            meta = OnlineMangaProvider.search_manga_metadata(self.manga_title)
+        except Exception as e:
+            print(f"[Kira Merger] Warning: metadata lookup failed for '{self.manga_title}': {e}")
+        try:
+            vol_covers = OnlineMangaProvider.fetch_volume_covers(self.manga_title) or {}
+        except Exception as e:
+            print(f"[Kira Merger] Warning: volume covers lookup failed for '{self.manga_title}': {e}")
+
         pbar = tqdm(vol_map.items(), desc="Merging Official Volumes", unit="vol")
         for vol_num, ch_list in pbar:
             pbar.set_postfix_str(f"Vol {vol_num:02d}")
-            cbz_res = self.merge_volume(vol_num, ch_list, chapters_dir, output_dir, verbose=False)
+            cbz_res = self.merge_volume(
+                vol_num, ch_list, chapters_dir, output_dir,
+                verbose=False,
+                meta=meta,
+                vol_covers=vol_covers
+            )
             if cbz_res:
                 output_files.append(cbz_res)
         pbar.close()

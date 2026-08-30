@@ -49,6 +49,45 @@ def test_auto_detect_manga_title():
         assert auto_detect_manga_title(gen_folder) == "Vinland Saga"
 
 
+def test_merge_all_volumes_resolves_apis_once_per_run(monkeypatch):
+    from kira.providers import OnlineMangaProvider
+
+    search_calls = []
+    covers_calls = []
+
+    def fake_search(title):
+        search_calls.append(title)
+        return {"author": "Test Author"}
+
+    def fake_covers(title):
+        covers_calls.append(title)
+        return {1: "http://cover.example/vol1.jpg", 2: "http://cover.example/vol2.jpg"}
+
+    monkeypatch.setattr(OnlineMangaProvider, "search_manga_metadata", classmethod(lambda cls, t: fake_search(t)))
+    monkeypatch.setattr(OnlineMangaProvider, "fetch_volume_covers", classmethod(lambda cls, t: fake_covers(t)))
+    monkeypatch.setattr(OnlineMangaProvider, "download_image", classmethod(lambda cls, u, p: False))
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        chapters_dir = tmp_path / "chapters"
+        chapters_dir.mkdir()
+        for ch in [1, 2, 3, 4]:
+            ch_folder = chapters_dir / f"chapter_{ch}"
+            ch_folder.mkdir()
+            img = Image.new('RGB', (10, 10), color='white')
+            img.save(ch_folder / "01.png")
+            create_cbz_archive(ch_folder, chapters_dir / f"Chapter_{ch:02d}.cbz")
+
+        out_dir = tmp_path / "volumes_out"
+        custom_map = {1: [1, 2], 2: [3, 4]}
+        merger = VolumeMerger(manga_title="TestManga")
+        res_files = merger.merge_all_volumes(chapters_dir, out_dir, mapping=custom_map)
+
+        assert len(res_files) == 2
+        assert len(search_calls) == 1
+        assert len(covers_calls) == 1
+
+
 def test_find_chapter_files_ignores_volume_files():
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
