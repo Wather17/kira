@@ -34,8 +34,8 @@ kira process [OPÇÕES]
 | `-m, --model` | `CHOICE` | `RealESRGAN_x4plus_anime_6B` | Modelo de IA (`RealESRGAN_x4plus_anime_6B`, `realesr-animevideov3`, `RealESRGAN_x4plus`). |
 | `-s, --scale` | `INT` | `4` | Fator de ampliação de escala do upscaler (2, 3 ou 4). |
 | `-t, --tile` | `INT` | `400` | Tamanho do bloco para processamento por mosaicos (evita estouro de VRAM). `0` desativa. |
-| `-p, --profile` | `CHOICE` | `KPW5` | Perfil do leitor Kindle (`KPW5`, `KO`, `KS`, `K11`, `KV`, `KPW34`, `KPW`, `K34`, `K57`, `OTHER`). |
-| `-f, --format` | `CHOICE` | `EPUB` | Formato do arquivo final (`EPUB`, `MOBI`, `AZW3`, `CBZ`, `KFX`). |
+| `-p, --profile` | `CHOICE` | `K11` | Perfil do leitor Kindle (`K11` padrão, `KPW5`, `KO`, `KS`, `KV`, `KPW34`, `KPW`, `K34`, `K57`, `OTHER`). |
+| `-f, --format` | `CHOICE` | `EPUB` | Formato do arquivo final (`EPUB`, `CBZ`, `KFX`). `AZW3`/`MOBI` são mapeados para EPUB com aviso (requisito do Send to Kindle). |
 | `--half / --no-half` | `FLAG` | Auto | Forçar ou desativar inferência em FP16 (Half-Precision). |
 | `--grayscale / --no-grayscale` | `FLAG` | `False` | Converter páginas para escala de cinza pura antes do upscale. |
 | `--manga-style / --webtoon` | `FLAG` | `--manga-style` | Leitura da direita para a esquerda (Mangá) ou rolagem contínua (Webtoon). |
@@ -71,7 +71,7 @@ kira colab-run [OPÇÕES]
 | `-o, --output` **(Obrigatório)** | `TEXT` | — | Pasta de saída no Google Drive (ex: `Kindle_Outputs`). |
 | `--gpu` | `CHOICE` | `T4` | Tipo de acelerador GPU no Colab (`T4`, `L4`, `A100`). |
 | `-m, --model` | `CHOICE` | `RealESRGAN_x4plus_anime_6B` | Modelo Real-ESRGAN a ser utilizado. |
-| `-p, --profile` | `CHOICE` | `KPW5` | Perfil do Kindle. |
+| `-p, --profile` | `CHOICE` | `K11` | Perfil do Kindle. |
 | `-f, --format` | `CHOICE` | `EPUB` | Formato de saída. |
 | `--session-name` | `TEXT` | `kira-gpu-worker` | Nome da sessão no Colab CLI. |
 | `--auto-stop / --no-stop` | `FLAG` | `--auto-stop` | Liberar a VM e parar a GPU imediatamente ao finalizar o lote. |

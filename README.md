@@ -64,11 +64,11 @@ pip install -e .
 
 ### 1. Processamento Local
 ```bash
-# Processar um volume para Kindle Paperwhite 5
-kira process -i "./mangas/Monster_Vol_01.cbz" -o "./kindle_pronto" -p KPW5 -f EPUB
+# Processar um volume para Kindle Básico 11ª Geração (perfil padrão)
+kira process -i "./mangas/Monster_Vol_01.cbz" -o "./kindle_pronto" -p K11 -f EPUB
 
 # Processar pasta com múltiplos mangás em lote
-kira process -i "./Manga_Inputs" -o "./Kindle_Outputs" -p KPW5 -f EPUB
+kira process -i "./Manga_Inputs" -o "./Kindle_Outputs" -p K11 -f EPUB
 ```
 
 ### 2. Execução Remota na GPU do Google Colab
@@ -103,10 +103,10 @@ Toda a documentação detalhada do projeto está organizada na pasta [`docs/`](d
 
 | Perfil | Modelo do Leitor | Resolução Ideal |
 | :--- | :--- | :--- |
-| **`KPW5`** *(Padrão)* | Kindle Paperwhite 11ª Geração (6.8") | **1236 × 1680** (300 PPI) |
+| **`K11`** *(Padrão)* | Kindle Básico 11ª Geração (6.0") | **1072 × 1448** (300 PPI) |
+| **`KPW5`** | Kindle Paperwhite 11ª Geração (6.8") | **1236 × 1680** (300 PPI) |
 | **`KO`** | Kindle Oasis 2 e 3 (7.0") | **1264 × 1680** (300 PPI) |
 | **`KS`** | Kindle Scribe (10.2") | **1860 × 2480** (300 PPI) |
-| **`K11`** *(Padrão)* | Kindle Básico 11ª Geração (6.0") | **1072 × 1448** (300 PPI) |
 | **`KPW34`** | Kindle Paperwhite 3 e 4 (6.0") | **1072 × 1448** (300 PPI) |
 | **`KV`** | Kindle Voyage (6.0") | **1072 × 1448** (300 PPI) |
 | **`K34` / `K57`** | Kindle 3/4/5/7 e Touch (6.0") | **600 × 800** (212 PPI) |
