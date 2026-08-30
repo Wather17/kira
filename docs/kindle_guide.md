@@ -43,7 +43,7 @@ Se você preferir transferir arquivos offline sem usar a nuvem da Amazon:
 1. Conecte o Kindle ao seu computador usando o cabo USB.
 2. Ao rodar o Kira, escolha o formato `.azw3` ou `.mobi`:
    ```bash
-   kira process -i "./meu_manga.cbz" -o "./saida" -p KPW5 -f AZW3
+   kira process -i "./meu_manga.cbz" -o "./saida" -p K11 -f EPUB
    ```
 3. Abra a unidade de disco do Kindle e copie o arquivo `.azw3` diretamente para a pasta **`documents/`**.
 4. Ejete o Kindle com segurança.
