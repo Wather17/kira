@@ -25,6 +25,7 @@ def test_kindle_converter_defaults_and_legacy_mapping():
     # Default format is EPUB
     conv_default = KindleConverter()
     assert conv_default.output_format == "EPUB"
+    assert conv_default.cropping == 0
 
     # AZW3 maps to EPUB
     conv_azw3 = KindleConverter(output_format="AZW3")
@@ -33,4 +34,61 @@ def test_kindle_converter_defaults_and_legacy_mapping():
     # MOBI maps to EPUB
     conv_mobi = KindleConverter(output_format="MOBI")
     assert conv_mobi.output_format == "EPUB"
+
+
+def test_converter_sends_cropping_0_by_default(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured['cmd'] = cmd
+        import subprocess as sp
+        class FakeComp:
+            def __init__(self):
+                self.returncode = 0
+                self.stdout = ""
+                self.stderr = ""
+        return FakeComp()
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        converter = KindleConverter(profile='K11', output_format='EPUB')
+        converter.convert(manga_dir, tmp_path / "out", title="TestManga")
+        assert '-c' in captured['cmd']
+        assert '0' in captured['cmd']
+        idx = captured['cmd'].index('-c')
+        assert captured['cmd'][idx + 1] == '0'
+
+
+def test_converter_sends_cropping_2_when_requested(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured['cmd'] = cmd
+        class FakeComp:
+            def __init__(self):
+                self.returncode = 0
+                self.stdout = ""
+                self.stderr = ""
+        return FakeComp()
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        converter = KindleConverter(profile='K11', output_format='EPUB', cropping=2)
+        converter.convert(manga_dir, tmp_path / "out", title="TestManga")
+        idx = captured['cmd'].index('-c')
+        assert captured['cmd'][idx + 1] == '2'
+
+
+def test_converter_cropping_independent_of_profile():
+    for profile in ('K11', 'KPW5'):
+        converter = KindleConverter(profile=profile, cropping=0)
+        assert converter.cropping == 0
 
