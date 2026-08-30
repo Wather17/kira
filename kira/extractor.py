@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 import subprocess
 import tempfile
 import zipfile
@@ -13,13 +14,23 @@ except ImportError:
 
 from kira.utils import SUPPORTED_ARCHIVE_EXTS, get_image_files, get_safe_temp_dir, natural_sort_filenames
 
+MAX_ZIP_ENTRIES = 100_000
+MAX_TOTAL_UNCOMPRESSED_BYTES = 40 * 1024**3
+
 
 class MangaExtractor:
     """Handles unpacking manga archives (CBZ, ZIP, CBR, RAR) or directory scans."""
 
-    def __init__(self, temp_dir: Optional[Union[str, Path]] = None):
+    def __init__(
+        self,
+        temp_dir: Optional[Union[str, Path]] = None,
+        max_zip_entries: int = MAX_ZIP_ENTRIES,
+        max_total_uncompressed: int = MAX_TOTAL_UNCOMPRESSED_BYTES,
+    ):
         self.temp_dir = Path(temp_dir) if temp_dir else get_safe_temp_dir("extracted")
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+        self.max_zip_entries = max_zip_entries
+        self.max_total_uncompressed = max_total_uncompressed
 
 
     def extract(self, source_path: Union[str, Path]) -> Tuple[Path, List[Path]]:
@@ -73,10 +84,44 @@ class MangaExtractor:
         return target_dir, images
 
 
+    def _validate_zip_member(self, member: zipfile.ZipInfo) -> None:
+        """Reject archive members with unsafe paths or symlinks."""
+        name = member.filename.replace("\\", "/")
+        if name.startswith("/") or os.path.isabs(member.filename):
+            raise ValueError(
+                f"Archive entry {member.filename!r} rejected: absolute path is not allowed."
+            )
+        normalized = Path(os.path.normpath(name))
+        if ".." in normalized.parts or ".." in name.split("/"):
+            raise ValueError(
+                f"Archive entry {member.filename!r} rejected: path traversal is not allowed."
+            )
+        mode = member.external_attr >> 16
+        if mode and stat.S_ISLNK(mode):
+            raise ValueError(
+                f"Archive entry {member.filename!r} rejected: symlink entries are not allowed."
+            )
+
     def _extract_zip(self, zip_path: Path, output_dir: Path) -> None:
-        """Extract ZIP / CBZ archive using Python built-in zipfile."""
+        """Extract ZIP / CBZ archive safely, validating member paths and limits."""
         with zipfile.ZipFile(zip_path, 'r') as archive:
-            archive.extractall(output_dir)
+            members = archive.infolist()
+            if len(members) > self.max_zip_entries:
+                raise ValueError(
+                    f"Archive {zip_path.name} rejected: {len(members)} entries exceeds "
+                    f"the limit of {self.max_zip_entries}."
+                )
+            total_size = 0
+            for member in members:
+                self._validate_zip_member(member)
+                total_size += member.file_size
+            if total_size > self.max_total_uncompressed:
+                raise ValueError(
+                    f"Archive {zip_path.name} rejected: uncompressed size {total_size} bytes "
+                    f"exceeds the limit of {self.max_total_uncompressed} bytes."
+                )
+            for member in members:
+                archive.extract(member, output_dir)
 
     def _extract_rar(self, rar_path: Path, output_dir: Path) -> None:
         """Extract RAR / CBR archive using rarfile or 7z system binary fallback."""
