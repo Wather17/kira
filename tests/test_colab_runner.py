@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 from kira.colab_runner import _build_remote_script_code, is_colab_cli_available, run_pipeline_on_colab
 
@@ -59,6 +60,42 @@ def test_remote_script_resolves_mydrive_variants():
     assert "startswith('drive/MyDrive/')" in script
     assert "startswith('/content/drive/MyDrive')" in script
 
+
+def test_run_pipeline_on_colab_uses_home_bin_fallback():
+    import subprocess as sp
+
+    mock_subprocess_run = MagicMock()
+    mock_subprocess_run.returncode = 0
+    mock_subprocess_run.stdout = "OK"
+
+    mock_popen = MagicMock()
+    mock_popen.stdout.readline.side_effect = ["Starting processing...\n", "Completed!\n", ""]
+    mock_popen.returncode = 0
+
+    captured_cmds = []
+    fake_run = MagicMock(return_value=mock_subprocess_run)
+
+    def record_run(cmd, **kwargs):
+        captured_cmds.append(cmd)
+        return fake_run(cmd, **kwargs)
+
+    with patch("shutil.which", return_value=None), \
+         patch("os.path.exists", return_value=True), \
+         patch.object(sp, "run", side_effect=record_run), \
+         patch("pathlib.Path.home", return_value=Path("/usr/otheruser")), \
+         patch("subprocess.Popen", return_value=mock_popen):
+
+        res = run_pipeline_on_colab(
+            input_path="Manga_Inputs",
+            output_dir="Kindle_Outputs",
+            gpu="T4",
+            session_name="test-kira-gpu",
+            auto_stop=True
+        )
+        assert res is True
+        new_cmds = [c for c in captured_cmds if "new" in c]
+        assert new_cmds[0][0] == str(Path("/usr/otheruser/.local/bin/colab"))
+        assert "/home/henrique" not in str(new_cmds[0][0])
 
 def test_run_pipeline_on_colab_success():
     mock_subprocess_run = MagicMock()

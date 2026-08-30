@@ -109,7 +109,8 @@ def run_pipeline_on_colab(
     Provision a remote Google Colab GPU instance, execute the Kira pipeline,
     and release the GPU compute upon completion.
     """
-    colab_bin = shutil.which("colab") or "/home/henrique/.local/bin/colab"
+    # Path.home() fallback supports `pip install --user` layouts without `~/.local/bin` in PATH
+    colab_bin = shutil.which("colab") or str(Path.home() / ".local/bin/colab")
     if not os.path.exists(colab_bin) and not is_colab_cli_available():
         console.print("[bold red]Error:[/bold red] Google Colab CLI (`colab`) is not installed.")
         console.print("Run `pip install google-colab-cli` or check PATH.")
