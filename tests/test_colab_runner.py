@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock, patch
-from kira.colab_runner import is_colab_cli_available, run_pipeline_on_colab
+from kira.colab_runner import _build_remote_script_code, is_colab_cli_available, run_pipeline_on_colab
 
 def test_is_colab_cli_available():
     with patch("shutil.which", return_value="/usr/bin/colab"):
@@ -7,6 +7,57 @@ def test_is_colab_cli_available():
 
     with patch("shutil.which", return_value=None):
         assert is_colab_cli_available() is False
+
+
+def test_remote_script_uses_argv_not_shell():
+    script = _build_remote_script_code(
+        input_path="MyDrive/Manga",
+        output_dir="Kindle_Out",
+        model="RealESRGAN_x4plus_anime_6B",
+        profile="K11",
+        output_format="EPUB",
+        tile=600,
+        workers=2,
+    )
+    assert "subprocess.run(" in script
+    assert "['kira', 'process'" in script
+    assert "os.system('kira process" not in script
+    assert "resolve_remote_path" in script
+
+
+def test_remote_script_preserves_hostile_paths_literally():
+    hostile = 'Manga; rm -rf /; `id` "quoted" \\backslash'
+    script = _build_remote_script_code(
+        input_path=hostile,
+        output_dir="Kindle_Out",
+        model="RealESRGAN_x4plus_anime_6B",
+        profile="K11",
+        output_format="EPUB",
+        tile=600,
+        workers=2,
+    )
+    # Paths are embedded as JSON literals: safe Python representation, decoded at runtime
+    import json
+    assert json.dumps(hostile) in script
+    assert "os.system('kira process" not in script
+    # The literal value survives an eval cycle as the remote interpreter sees it
+    assert eval(json.dumps(hostile)) == hostile
+
+
+def test_remote_script_resolves_mydrive_variants():
+    script = _build_remote_script_code(
+        input_path="MyDrive/Manga",
+        output_dir="Kindle_Out",
+        model="RealESRGAN_x4plus_anime_6B",
+        profile="K11",
+        output_format="EPUB",
+        tile=600,
+        workers=2,
+    )
+    assert "colab_drive_root = Path('/content/drive/MyDrive')" in script
+    assert "startswith('MyDrive/')" in script
+    assert "startswith('drive/MyDrive/')" in script
+    assert "startswith('/content/drive/MyDrive')" in script
 
 
 def test_run_pipeline_on_colab_success():
