@@ -10,14 +10,14 @@ Ao executar o Kira, selecione a flag `-p` correspondente ao seu modelo de Kindle
 
 | Perfil (`-p`) | Modelo de Kindle | Tamanho da Tela | Resolução Ideal | Densidade |
 | :--- | :--- | :--- | :--- | :--- |
-| **`KPW5`** *(Padrão)* | Kindle Paperwhite 11ª Geração (2021+) | 6.8 polegadas | **1236 × 1680** | 300 PPI |
-| **`KO`** | Kindle Oasis 2 e 3 (2017/2019) | 7.0 polegadas | **1264 × 1680** | 300 PPI |
-| **`KS`** | Kindle Scribe (2022+) | 10.2 polegadas | **1860 × 2480** | 300 PPI |
-| **`K11`** | Kindle Básico 11ª Geração (2022+) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
-| **`KPW3`** | Kindle Paperwhite 3 e 4 (2015/2018) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
+| **`K11`** *(Padrão)* | Kindle Básico 11ª Geração (2022+) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
+| **`KPW34`** | Kindle Paperwhite 3 e 4 (2015/2018) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
 | **`KV`** | Kindle Voyage (2014) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
 | **`KPW`** | Kindle Paperwhite 1 e 2 (2012/2013) | 6.0 polegadas | **758 × 1024** | 212 PPI |
+| **`K34` / `K57`** | Kindle 3/4/5/7 e Touch | 6.0 polegadas | **600 × 800** | 212 PPI |
 | **`OTHER`** | Outros e-readers / Tablets genéricos | Customizável | Proporcional | — |
+
+> Obs.: `KPW3` e `K345` são aliases aceitos pela CLI (com aviso de depreciação), traduzidos para `KPW34` e `K34`, respectivamente.
 
 ---
 
