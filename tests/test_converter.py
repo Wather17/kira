@@ -92,3 +92,60 @@ def test_converter_cropping_independent_of_profile():
         converter = KindleConverter(profile=profile, cropping=0)
         assert converter.cropping == 0
 
+
+def test_converter_color_uses_forcecolor(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured['cmd'] = cmd
+        class FakeComp:
+            def __init__(self):
+                self.returncode = 0
+                self.stdout = ""
+                self.stderr = ""
+        return FakeComp()
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        converter = KindleConverter(color=True)
+        converter.convert(manga_dir, tmp_path / "out", title="TestManga")
+
+        assert '--forcecolor' in captured['cmd']
+        # No bare '-c' (without integer value) may appear: every '-c' must carry a value
+        idx = 0
+        while idx < len(captured['cmd']):
+            if captured['cmd'][idx] == '-c':
+                assert idx + 1 < len(captured['cmd'])
+                assert captured['cmd'][idx + 1] in ('0', '1', '2')
+                idx += 2
+            else:
+                idx += 1
+
+
+def test_converter_color_false_adds_no_forcecolor(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured['cmd'] = cmd
+        class FakeComp:
+            def __init__(self):
+                self.returncode = 0
+                self.stdout = ""
+                self.stderr = ""
+        return FakeComp()
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        converter = KindleConverter(color=False)
+        converter.convert(manga_dir, tmp_path / "out", title="TestManga")
+
+        assert '--forcecolor' not in captured['cmd']
+
