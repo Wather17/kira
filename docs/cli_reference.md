@@ -34,7 +34,7 @@ kira process [OPÇÕES]
 | `-m, --model` | `CHOICE` | `RealESRGAN_x4plus_anime_6B` | Modelo de IA (`RealESRGAN_x4plus_anime_6B`, `realesr-animevideov3`, `RealESRGAN_x4plus`). |
 | `-s, --scale` | `INT` | `4` | Fator de ampliação de escala do upscaler (2, 3 ou 4). |
 | `-t, --tile` | `INT` | `400` | Tamanho do bloco para processamento por mosaicos (evita estouro de VRAM). `0` desativa. |
-| `-p, --profile` | `CHOICE` | `KPW5` | Perfil do leitor Kindle (`KPW5`, `KO`, `KS`, `K11`, `KV`, `KPW3`, `KPW`, `OTHER`). |
+| `-p, --profile` | `CHOICE` | `KPW5` | Perfil do leitor Kindle (`KPW5`, `KO`, `KS`, `K11`, `KV`, `KPW34`, `KPW`, `K34`, `K57`, `OTHER`). |
 | `-f, --format` | `CHOICE` | `EPUB` | Formato do arquivo final (`EPUB`, `MOBI`, `AZW3`, `CBZ`, `KFX`). |
 | `--half / --no-half` | `FLAG` | Auto | Forçar ou desativar inferência em FP16 (Half-Precision). |
 | `--grayscale / --no-grayscale` | `FLAG` | `False` | Converter páginas para escala de cinza pura antes do upscale. |

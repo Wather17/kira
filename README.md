@@ -106,9 +106,10 @@ Toda a documentação detalhada do projeto está organizada na pasta [`docs/`](d
 | **`KPW5`** *(Padrão)* | Kindle Paperwhite 11ª Geração (6.8") | **1236 × 1680** (300 PPI) |
 | **`KO`** | Kindle Oasis 2 e 3 (7.0") | **1264 × 1680** (300 PPI) |
 | **`KS`** | Kindle Scribe (10.2") | **1860 × 2480** (300 PPI) |
-| **`K11`** | Kindle Básico 11ª Geração (6.0") | **1072 × 1448** (300 PPI) |
-| **`KPW3`** | Kindle Paperwhite 3 e 4 (6.0") | **1072 × 1448** (300 PPI) |
+| **`K11`** *(Padrão)* | Kindle Básico 11ª Geração (6.0") | **1072 × 1448** (300 PPI) |
+| **`KPW34`** | Kindle Paperwhite 3 e 4 (6.0") | **1072 × 1448** (300 PPI) |
 | **`KV`** | Kindle Voyage (6.0") | **1072 × 1448** (300 PPI) |
+| **`K34` / `K57`** | Kindle 3/4/5/7 e Touch (6.0") | **600 × 800** (212 PPI) |
 | **`OTHER`** | Outros e-readers / Tablets | Proporcional |
 
 ---

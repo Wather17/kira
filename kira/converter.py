@@ -6,17 +6,24 @@ from typing import Dict, List, Optional, Union
 
 from kira.utils import create_cbz_archive
 
-# Popular Kindle Device Profiles supported by KCC
+# Popular Kindle Device Profiles supported by the installed KCC (v11.x)
 KINDLE_PROFILES: Dict[str, str] = {
     'KPW5': 'Kindle Paperwhite 5 (11th Gen, 6.8")',
-    'KPW3': 'Kindle Paperwhite 3/4 (6")',
+    'KPW34': 'Kindle Paperwhite 3/4 (6")',
     'KPW': 'Kindle Paperwhite 1/2',
     'KO': 'Kindle Oasis (1/2/3)',
     'KS': 'Kindle Scribe (10.2")',
     'K11': 'Kindle Basic (11th Gen 2022)',
     'KV': 'Kindle Voyage',
-    'K345': 'Kindle 3/4/5/Touch',
+    'K34': 'Kindle 3/4/5/Touch',
+    'K57': 'Kindle 5/7',
     'OTHER': 'Generic E-Reader'
+}
+
+# Legacy names accepted for backward compatibility, mapped to real KCC profiles
+PROFILE_ALIASES: Dict[str, str] = {
+    'KPW3': 'KPW34',
+    'K345': 'K34'
 }
 
 OUTPUT_FORMATS = ['EPUB', 'CBZ', 'KFX']
@@ -39,8 +46,14 @@ class KindleConverter:
         color: bool = False,
         cropping: int = 0,
     ):
-        self.profile = profile if profile in KINDLE_PROFILES else 'K11'
-        
+        profile = profile.upper()
+        if profile in PROFILE_ALIASES:
+            print(f"[Kira Notice] Profile '{profile}' is deprecated; using '{PROFILE_ALIASES[profile]}' instead.")
+            profile = PROFILE_ALIASES[profile]
+        if profile not in KINDLE_PROFILES:
+            print(f"[Kira Warning] Profile '{profile}' is not supported by KCC. Using 'K11' instead.")
+            profile = 'K11'
+        self.profile = profile
         fmt = output_format.upper()
         if fmt in LEGACY_FORMATS:
             print(f"[Kira Notice] Format '{fmt}' is deprecated for Kindle (Amazon Send to Kindle requires EPUB). Automatically converting to 'EPUB'.")
@@ -56,6 +69,7 @@ class KindleConverter:
         self.webtoon = webtoon
         self.color = color
         self.cropping = cropping
+        self.last_fallback = False
 
         self.kcc_bin = self._find_kcc_binary()
 
@@ -89,6 +103,19 @@ class KindleConverter:
         return None
 
 
+    def _validate_profile_against_kcc(self) -> None:
+        """Validate profile against the installed KCC, raising a clear error if unsupported."""
+        try:
+            from kindlecomicconverter.image import ProfileData
+            supported = set(ProfileData.Profiles.keys())
+        except Exception:
+            return
+        if self.profile not in supported:
+            raise ValueError(
+                f"Profile '{self.profile}' is not supported by the installed KCC. "
+                f"Available profiles: {', '.join(sorted(supported))}"
+            )
+
     def convert(
         self,
         input_path: Union[str, Path],
@@ -101,6 +128,7 @@ class KindleConverter:
         Returns:
             Path: Path to created Kindle output file.
         """
+        self.last_fallback = False
         input_path = Path(input_path).resolve()
         output_dir = Path(output_dir).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -109,12 +137,15 @@ class KindleConverter:
 
         if self.output_format == 'CBZ':
             print(f"[Kira] Packaging CBZ archive for '{book_title}'...")
+            self.last_fallback = True
             return self._fallback_cbz_convert(input_path, output_dir, book_title)
 
         if self.kcc_bin:
+            self._validate_profile_against_kcc()
             return self._convert_with_kcc(input_path, output_dir, book_title)
         else:
             print("[Kira Warning] KCC binary (kcc-c2e) not found. Packaging as optimized CBZ fallback...")
+            self.last_fallback = True
             return self._fallback_cbz_convert(input_path, output_dir, book_title)
 
     def _convert_with_kcc(self, input_path: Path, output_dir: Path, title: str) -> Path:
@@ -162,6 +193,7 @@ class KindleConverter:
             err_msg = res.stderr.strip() or res.stdout.strip()
             print(f"[Kira Warning] KCC returned error: {err_msg}")
             print("[Kira] Attempting CBZ fallback creation...")
+            self.last_fallback = True
             return self._fallback_cbz_convert(input_path, output_dir, title)
 
         expected_ext = f".{self.output_format.lower()}"

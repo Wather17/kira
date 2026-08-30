@@ -139,6 +139,9 @@ class MangaPipeline:
                 output_dir=out_dir,
                 title=input_path.stem
             )
+            used_fallback = getattr(self.converter, 'last_fallback', False)
+            if used_fallback:
+                print("[Kira Pipeline Warning] KCC conversion failed or unavailable; output is a plain CBZ (not Kindle-adapted).")
 
             elapsed = time.time() - start_time
             file_size_mb = kindle_output_file.stat().st_size / (1024 * 1024) if kindle_output_file.exists() and kindle_output_file.is_file() else 0.0
@@ -149,7 +152,8 @@ class MangaPipeline:
                 'output': str(kindle_output_file),
                 'pages': page_count,
                 'time_seconds': round(elapsed, 2),
-                'size_mb': round(file_size_mb, 2)
+                'size_mb': round(file_size_mb, 2),
+                'status': 'fallback' if used_fallback else 'ok'
             }
 
             print(f"[Kira Pipeline] Completed '{input_path.stem}' in {elapsed:.1f}s -> {kindle_output_file.name} ({file_size_mb:.2f} MB)")

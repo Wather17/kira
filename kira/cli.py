@@ -9,9 +9,11 @@ from rich.panel import Panel
 from rich.table import Table
 
 from kira.pipeline import MangaPipeline
-from kira.converter import KINDLE_PROFILES, KindleConverter
+from kira.converter import KINDLE_PROFILES, PROFILE_ALIASES, KindleConverter
 from kira.upscaler import MODEL_URLS, MangaUpscaler
 from kira.utils import is_colab, resolve_google_drive_path
+
+PROFILE_CHOICES = list(KINDLE_PROFILES.keys()) + list(PROFILE_ALIASES.keys())
 
 console = Console()
 
@@ -27,7 +29,7 @@ def cli():
 @click.option("-i", "--input", "input_path", required=True, type=str, help="Input CBZ/ZIP file or folder containing manga archives.")
 @click.option("-o", "--output", "output_dir", required=True, type=str, help="Output directory for processed Kindle files.")
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
-@click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle model profile.")
+@click.option("-p", "--profile", default="K11", type=click.Choice(PROFILE_CHOICES), help="Target Kindle model profile.")
 
 @click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "CBZ", "KFX", "AZW3", "MOBI"]), help="Output format (EPUB recommended for Send to Kindle).")
 
@@ -173,7 +175,7 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
 @click.option("-o", "--output", "output_dir", required=True, type=str, help="Output folder in Google Drive (e.g. Kindle_Outputs).")
 @click.option("--gpu", default="T4", type=click.Choice(["T4", "L4", "A100"]), help="Google Colab GPU accelerator type.")
 @click.option("-m", "--model", default="RealESRGAN_x4plus_anime_6B", type=click.Choice(list(MODEL_URLS.keys())), help="Real-ESRGAN model to use.")
-@click.option("-p", "--profile", default="K11", type=click.Choice(list(KINDLE_PROFILES.keys())), help="Target Kindle profile.")
+@click.option("-p", "--profile", default="K11", type=click.Choice(PROFILE_CHOICES), help="Target Kindle profile.")
 
 @click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "CBZ", "KFX", "AZW3", "MOBI"]), help="Output format.")
 @click.option("--tile", default=600, type=int, help="Tile size for GPU upscaling (default: 600 for Colab GPU).")
@@ -230,14 +232,18 @@ def _print_summary(stats_list):
     table.add_column("Time (s)", style="yellow", justify="right")
     table.add_column("Size (MB)", style="green", justify="right")
     table.add_column("Output File", style="dim")
+    table.add_column("Status", style="magenta")
 
     for item in stats_list:
+        status = item.get('status', 'ok')
+        status_label = "FALLBACK" if status == 'fallback' else "OK"
         table.add_row(
             str(item['title']),
             str(item['pages']),
             f"{item['time_seconds']:.1f}",
             f"{item['size_mb']:.2f}",
-            Path(str(item['output'])).name
+            Path(str(item['output'])).name,
+            status_label
         )
     console.print("\n")
     console.print(table)

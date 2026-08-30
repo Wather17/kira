@@ -38,6 +38,7 @@ def test_manga_pipeline_end_to_end():
         assert stats['title'] == "OnePiece_Ch01"
         assert stats['pages'] == 2
         assert Path(stats['output']).exists()
+        assert stats['status'] == 'fallback'
 
 
 def test_manga_pipeline_concurrent_workers():
