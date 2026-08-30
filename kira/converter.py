@@ -149,7 +149,7 @@ class KindleConverter:
         if self.webtoon:
             cmd.append('-w')
         if self.color:
-            cmd.append('-c')
+            cmd.append('--forcecolor')
         if self.gamma != 1.0:
             cmd.extend(['-g', str(self.gamma)])
 
