@@ -40,6 +40,7 @@ kira process [OPÇÕES]
 | `--grayscale / --no-grayscale` | `FLAG` | `False` | Converter páginas para escala de cinza pura antes do upscale. |
 | `--manga-style / --webtoon` | `FLAG` | `--manga-style` | Leitura da direita para a esquerda (Mangá) ou rolagem contínua (Webtoon). |
 | `--gamma` | `FLOAT` | `1.0` | Correção gama de contraste para telas e-Ink (ex: 1.1 para tons mais escuros). |
+| `--cropping` | `INT` | `0` | Modo de corte automático do KCC (`0` desabilitado — preserva a página original, `1` margens, `2` margens + número de página). |
 | `--keep-extracted` | `FLAG` | `False` | Manter a pasta de imagens descompactadas após o término. |
 | `--keep-cbz / --no-keep-cbz`| `FLAG` | `--keep-cbz` | Salvar uma cópia das imagens ampliadas em `.cbz` na pasta de saída. |
 

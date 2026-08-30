@@ -37,6 +37,7 @@ class KindleConverter:
         upscale: bool = True,
         webtoon: bool = False,
         color: bool = False,
+        cropping: int = 0,
     ):
         self.profile = profile if profile in KINDLE_PROFILES else 'K11'
         
@@ -54,6 +55,7 @@ class KindleConverter:
         self.upscale = upscale
         self.webtoon = webtoon
         self.color = color
+        self.cropping = cropping
 
         self.kcc_bin = self._find_kcc_binary()
 
@@ -131,6 +133,9 @@ class KindleConverter:
         cmd.extend(['-t', title])
         cmd.extend(['--metadatatitle', '2'])
         cmd.extend(['--keepcomicinfo', '1'])
+
+        # Cropping mode (0=disabled default preserves original page art)
+        cmd.extend(['-c', str(self.cropping)])
 
         if self.manga_style:
             cmd.append('-m')  # Right-to-Left reading order for manga

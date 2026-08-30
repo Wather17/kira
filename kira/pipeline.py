@@ -38,6 +38,7 @@ class MangaPipeline:
 
         gamma: float = 1.0,
         hq: bool = True,
+        cropping: int = 0,
         # Pipeline options
         keep_extracted: bool = False,
         keep_upscaled_cbz: bool = True,
@@ -62,6 +63,7 @@ class MangaPipeline:
             manga_style=manga_style,
             gamma=gamma,
             hq=hq,
+            cropping=cropping,
         )
 
         self.keep_extracted = keep_extracted

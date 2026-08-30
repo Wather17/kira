@@ -33,6 +33,7 @@ def cli():
 
 @click.option("--gamma", default=1.0, type=float, help="Gamma correction factor for e-ink contrast.")
 @click.option("--grayscale/--color", default=False, help="Convert images to grayscale mode for e-ink.")
+@click.option("--cropping", default=0, type=click.IntRange(0, 2), help="KCC cropping mode (0: disabled, 1: margins, 2: margins + page number).")
 @click.option("--tile", default=400, type=int, help="Tile size for Real-ESRGAN GPU upscaling (prevents OOM).")
 @click.option("--device", default=None, type=str, help="Device to run upscaling on (cuda, cpu, mps).")
 @click.option("--max-dim", default=2400, type=int, help="Maximum image dimension limit (pixels).")
@@ -47,6 +48,7 @@ def process(
     output_format: str,
     gamma: float,
     grayscale: bool,
+    cropping: int,
     tile: int,
     device: str,
     max_dim: int,
@@ -69,6 +71,7 @@ def process(
         kindle_profile=profile,
         output_format=output_format,
         gamma=gamma,
+        cropping=cropping,
         keep_upscaled_cbz=keep_cbz,
         verbose=verbose,
         workers=workers
