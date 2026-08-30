@@ -48,3 +48,59 @@ def test_auto_detect_manga_title():
         (gen_folder / "Vinland_Saga_Ch_001.cbz").touch()
         assert auto_detect_manga_title(gen_folder) == "Vinland Saga"
 
+
+def test_find_chapter_files_ignores_volume_files():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        chapters_dir = tmp_path / "chapters"
+        chapters_dir.mkdir()
+        (chapters_dir / "Chapter_01.cbz").touch()
+        (chapters_dir / "Vol_01.cbz").touch()
+        (chapters_dir / "Volume 1.cbz").touch()
+
+        merger = VolumeMerger(manga_title="TestManga")
+        files = merger.find_chapter_files(chapters_dir, 1)
+        assert [f.name for f in files] == ["Chapter_01.cbz"]
+
+
+def test_find_chapter_files_requires_explicit_marker():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        chapters_dir = tmp_path / "chapters"
+        chapters_dir.mkdir()
+        (chapters_dir / "0001.jpg").touch()
+        (chapters_dir / "01.jpg").touch()
+
+        merger = VolumeMerger(manga_title="TestManga")
+        assert merger.find_chapter_files(chapters_dir, 1) == []
+
+
+def test_find_chapter_files_strict_number_formats():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        chapters_dir = tmp_path / "chapters"
+        chapters_dir.mkdir()
+        (chapters_dir / "#001.cbz").touch()
+        (chapters_dir / "(001).cbz").touch()
+        (chapters_dir / "[001].cbz").touch()
+        (chapters_dir / "#013.cbz").touch()
+
+        merger = VolumeMerger(manga_title="TestManga")
+        files = {f.name for f in merger.find_chapter_files(chapters_dir, 1)}
+        assert files == {"#001.cbz", "(001).cbz", "[001].cbz"}
+        assert {f.name for f in merger.find_chapter_files(chapters_dir, 13)} == {"#013.cbz"}
+
+
+def test_find_chapter_files_legit_names_still_match():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        chapters_dir = tmp_path / "chapters"
+        chapters_dir.mkdir()
+        (chapters_dir / "Chapter_01.cbz").touch()
+        (chapters_dir / "Ch 13.5.zip").touch()
+        (chapters_dir / "chapter_1").mkdir()
+
+        merger = VolumeMerger(manga_title="TestManga")
+        assert {f.name for f in merger.find_chapter_files(chapters_dir, 1)} == {"Chapter_01.cbz", "chapter_1"}
+        assert {f.name for f in merger.find_chapter_files(chapters_dir, 13)} == {"Ch 13.5.zip"}
+

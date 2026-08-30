@@ -117,12 +117,19 @@ class VolumeMerger:
         return {int(k): [int(c) for c in v] for k, v in raw_dict.items()}
 
     def find_chapter_files(self, chapters_dir: Path, chapter_num: Union[int, float]) -> List[Path]:
-        """Locate file(s) or folder(s) matching chapter number (e.g. 'Ch. 1', 'ch_01', 'Ch. 13.5')."""
+        """Locate file(s) or folder(s) matching chapter number (e.g. 'Ch. 1', 'ch_01', 'Ch. 13.5', '#013', '(013)').
+
+        Only explicit chapter markers match (ch/chapter/cap/capitulo prefix or '#'/'()' format);
+        loose numbers ('Vol_1', '0001.jpg', 'Volume 2') never match as chapters.
+        """
         matches = []
         # Pattern matching exact chapter number or decimal sub-chapters (e.g. 13 and 13.5)
         pat_exact = rf"(?:ch|chapter|cap|capitulo)[\s_\-\.]*0*{chapter_num}(?!\d)"
         pat_sub = rf"(?:ch|chapter|cap|capitulo)[\s_\-\.]*0*{chapter_num}\.\d+"
-        pat_num = rf"\b0*{chapter_num}\b"
+        # Strict number-only formats explicitly marked as chapters (e.g. '#13', '(13)', '[13]')
+        pat_hash = rf"#[\s_\-\.]*0*{chapter_num}(?!\d)"
+        pat_paren = rf"\([\s_\-\.]*0*{chapter_num}(?!\d)[\s_\-\.]*\)"
+        pat_bracket = rf"\[[\s_\-\.]*0*{chapter_num}(?!\d)[\s_\-\.]*\]"
 
         candidates = list(chapters_dir.iterdir())
         if any(c.is_dir() for c in candidates):
@@ -130,7 +137,7 @@ class VolumeMerger:
 
         for item in natural_sort_filenames(candidates):
             name_lower = item.name.lower()
-            if re.search(pat_exact, name_lower) or re.search(pat_num, name_lower):
+            if re.search(pat_exact, name_lower) or re.search(pat_hash, name_lower) or re.search(pat_paren, name_lower) or re.search(pat_bracket, name_lower):
                 matches.append(item)
             elif isinstance(chapter_num, int) and re.search(pat_sub, name_lower):
                 matches.append(item)
