@@ -125,7 +125,7 @@ kira info
 ---
 
 ## 5. `kira colab-setup`
-Imprime as instruções de verificação de ambiente para uso interativo no Google Colab ou Jupyter Notebook.
+Instala as dependências em um notebook Google Colab: pacotes Python (incl. KCC via `pip install kindlecomicconverter`, alinhado ao notebook oficial) e utilitários de sistema. Valida o exit code de cada passo e a versão do KCC ao final — falha com mensagem clara em vez de concluir silenciosamente.
 
 ```bash
 kira colab-setup
