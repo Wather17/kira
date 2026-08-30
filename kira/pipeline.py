@@ -1,7 +1,6 @@
 import os
 import re
 import shutil
-import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -13,6 +12,7 @@ from kira.upscaler import MangaUpscaler
 from kira.utils import (
     SUPPORTED_ARCHIVE_EXTS,
     get_image_files,
+    get_safe_temp_dir,
     is_colab,
     resolve_google_drive_path,
 )
@@ -90,7 +90,7 @@ class MangaPipeline:
 
         print(f"\n[Kira Pipeline] Starting processing for: {input_path.name}")
 
-        work_dir = Path(temp_dir) if temp_dir else Path(tempfile.mkdtemp(prefix="kira_work_"))
+        work_dir = Path(temp_dir) if temp_dir else get_safe_temp_dir("work")
         extracted_dir = work_dir / "extracted"
         upscaled_dir = work_dir / "upscaled"
 
@@ -196,7 +196,7 @@ class MangaPipeline:
             print(f"\n[Kira Pipeline] Detected {len(items_to_process)} chapter files in {in_path}. Auto-merging into official volumes with covers & metadata...")
             from kira.merger import VolumeMerger
             merger = VolumeMerger()
-            merged_vols_dir = Path(tempfile.mkdtemp(prefix="kira_auto_merged_vols_"))
+            merged_vols_dir = get_safe_temp_dir("auto_merged_vols")
             volume_files = merger.merge_all_volumes(in_path, merged_vols_dir)
             if volume_files:
                 items_to_process = volume_files

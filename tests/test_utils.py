@@ -1,10 +1,12 @@
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from PIL import Image
 from kira.utils import (
     natural_sort_filenames,
     get_image_files,
     create_cbz_archive,
+    get_safe_temp_dir,
     resolve_google_drive_path
 )
 
@@ -48,6 +50,24 @@ def test_create_cbz_archive():
 def test_resolve_google_drive_path():
     p = resolve_google_drive_path("manga/vol1")
     assert isinstance(p, Path)
+
+
+def test_get_safe_temp_dir_colab():
+    with patch("kira.utils.os.path.exists", return_value=True), \
+         patch("kira.utils.Path.mkdir") as mock_mkdir:
+        d = get_safe_temp_dir("work")
+    assert str(d).startswith("/content/kira_temp")
+    mock_mkdir.assert_called()
+
+
+def test_get_safe_temp_dir_local():
+    with patch("kira.utils.is_colab", return_value=False), \
+         patch("kira.utils.Path.resolve", return_value=Path("/tmp/scratch/kira_temp")), \
+         patch("kira.utils.Path.mkdir") as mock_mkdir:
+        d = get_safe_temp_dir("work")
+    assert d.parent.name == "kira_temp"
+    assert d.name.startswith("work_")
+    mock_mkdir.assert_called()
 
 
 def test_suppress_stdout_stderr(capsys):
