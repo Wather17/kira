@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -90,7 +91,12 @@ class MangaPipeline:
 
         print(f"\n[Kira Pipeline] Starting processing for: {input_path.name}")
 
-        work_dir = Path(temp_dir) if temp_dir else get_safe_temp_dir("work")
+        work_base = Path(temp_dir) if temp_dir else get_safe_temp_dir("work")
+        work_base.mkdir(parents=True, exist_ok=True)
+        safe_stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", input_path.stem).strip("._") or "item"
+        work_dir = Path(
+            tempfile.mkdtemp(prefix=f"{safe_stem[:60]}_", dir=str(work_base))
+        )
         extracted_dir = work_dir / "extracted"
         upscaled_dir = work_dir / "upscaled"
 
@@ -224,4 +230,3 @@ class MangaPipeline:
                 print(f"[Kira Pipeline Error] Failed to process '{item.name}': {e}")
 
         return results
-

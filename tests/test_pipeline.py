@@ -1,4 +1,5 @@
 import tempfile
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 from PIL import Image
@@ -106,3 +107,45 @@ def test_pipeline_work_dir_respects_explicit_temp_dir():
         assert stats['title'] == "DeathNote_Ch01"
         assert Path(stats['output']).exists()
 
+
+def test_pipeline_keep_extracted_isolates_consecutive_items():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        first = _make_cbz(tmp_path, "First", 1)
+        second = _make_cbz(tmp_path, "Second", 3)
+        work_base = tmp_path / "preserved_work"
+        out_dir = tmp_path / "output"
+
+        pipeline = MangaPipeline(
+            device="cpu",
+            output_format="CBZ",
+            keep_extracted=True,
+        )
+        converted_inputs = []
+
+        def fake_upscale(images, output_dir):
+            output_dir.mkdir(parents=True, exist_ok=True)
+            result = []
+            for image in images:
+                target = output_dir / image.name
+                shutil.copy2(image, target)
+                result.append(target)
+            return result
+
+        def fake_convert(input_path, output_dir, title):
+            converted_inputs.append(sorted(path.name for path in Path(input_path).iterdir()))
+            output = Path(output_dir) / f"{title}.cbz"
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(b"converted")
+            return output
+
+        pipeline.upscaler.upscale_batch = fake_upscale
+        pipeline.converter.convert = fake_convert
+
+        pipeline.process_item(first, out_dir, temp_dir=work_base)
+        pipeline.process_item(second, out_dir, temp_dir=work_base)
+
+        assert len(converted_inputs) == 2
+        assert len(converted_inputs[0]) == 1
+        assert len(converted_inputs[1]) == 3
+        assert len(list(work_base.iterdir())) == 2
