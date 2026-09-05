@@ -42,3 +42,14 @@ tmp/
 
 openspec/
 .agent/
+
+# Local agent configuration and issue cache
+.opencode/
+AGENTS.md
+issues/
+# AI agent configuration files
+.agent-init.json
+.agents/skills/audit-issues/SKILL.md
+.agents/skills/refine-issues/SKILL.md
+.agents/skills/autonomous-batch/SKILL.md
+# Synced GitHub issues
