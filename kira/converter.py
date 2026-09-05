@@ -150,6 +150,11 @@ class KindleConverter:
 
     def _convert_with_kcc(self, input_path: Path, output_dir: Path, title: str) -> Path:
         """Execute KCC CLI (`kcc-c2e`)."""
+        before = {
+            path: (path.stat().st_mtime_ns, path.stat().st_size)
+            for path in output_dir.iterdir()
+            if path.is_file()
+        }
         cmd = []
         if ' ' in self.kcc_bin:
             cmd = self.kcc_bin.split(' ')
@@ -199,14 +204,17 @@ class KindleConverter:
         expected_ext = f".{self.output_format.lower()}"
         target_file = output_dir / f"{title}{expected_ext}"
 
-        if target_file.exists():
+        if target_file.exists() and self._was_created_or_updated(target_file, before):
             return target_file
 
-        # Check for generated files (.azw3, .mobi, .epub, .cbz)
-        for ext in [expected_ext, '.mobi', '.azw3', '.epub', '.kepub.epub', '.cbz']:
+        # Check for generated files using only artifacts created or changed by this run.
+        supported_exts = [expected_ext]
+        if expected_ext == '.epub':
+            supported_exts.append('.kepub.epub')
+        for ext in supported_exts:
             for cand_name in [title, input_path.stem, input_path.name, "upscaled"]:
                 cand = output_dir / f"{cand_name}{ext}"
-                if cand.exists():
+                if cand.exists() and self._was_created_or_updated(cand, before):
                     desired_file = output_dir / f"{title}{cand.suffix}"
                     if cand != desired_file:
                         shutil.move(cand, desired_file)
@@ -214,11 +222,26 @@ class KindleConverter:
                     return cand
 
         # Fallback check
-        matches = [f for f in output_dir.glob(f"{title}*") if f.is_file()]
+        matches = [
+            f for f in output_dir.glob(f"{title}*")
+            if f.is_file()
+            and f.suffix.lower() in supported_exts
+            and self._was_created_or_updated(f, before)
+        ]
         if matches:
             return matches[0]
 
-        return target_file
+        print("[Kira Warning] KCC returned success but produced no new compatible output.")
+        print("[Kira] Attempting CBZ fallback creation...")
+        self.last_fallback = True
+        return self._fallback_cbz_convert(input_path, output_dir, title)
+
+    @staticmethod
+    def _was_created_or_updated(path: Path, before: Dict[Path, tuple]) -> bool:
+        """Return whether an output path is new or changed since the KCC invocation began."""
+        current = path.stat()
+        previous = before.get(path)
+        return previous is None or previous != (current.st_mtime_ns, current.st_size)
 
 
 

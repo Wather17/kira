@@ -5,6 +5,10 @@ import pytest
 from kira.converter import KINDLE_PROFILES, KindleConverter
 
 
+def _seed_input_directory(path: Path) -> None:
+    Image.new('RGB', (10, 10), color='white').save(path / "0001.jpg")
+
+
 def test_kindle_converter_fallback():
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
@@ -56,7 +60,9 @@ def test_converter_sends_cropping_0_by_default(monkeypatch):
         tmp_path = Path(tmp_dir)
         manga_dir = tmp_path / "manga"
         manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
         converter = KindleConverter(profile='K11', output_format='EPUB')
+        converter.kcc_bin = "/usr/bin/fake-kcc"
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
         assert '-c' in captured['cmd']
         assert '0' in captured['cmd']
@@ -82,7 +88,9 @@ def test_converter_sends_cropping_2_when_requested(monkeypatch):
         tmp_path = Path(tmp_dir)
         manga_dir = tmp_path / "manga"
         manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
         converter = KindleConverter(profile='K11', output_format='EPUB', cropping=2)
+        converter.kcc_bin = "/usr/bin/fake-kcc"
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
         idx = captured['cmd'].index('-c')
         assert captured['cmd'][idx + 1] == '2'
@@ -112,7 +120,9 @@ def test_converter_color_uses_forcecolor(monkeypatch):
         tmp_path = Path(tmp_dir)
         manga_dir = tmp_path / "manga"
         manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
         converter = KindleConverter(color=True)
+        converter.kcc_bin = "/usr/bin/fake-kcc"
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
 
         assert '--forcecolor' in captured['cmd']
@@ -145,7 +155,9 @@ def test_converter_color_false_adds_no_forcecolor(monkeypatch):
         tmp_path = Path(tmp_dir)
         manga_dir = tmp_path / "manga"
         manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
         converter = KindleConverter(color=False)
+        converter.kcc_bin = "/usr/bin/fake-kcc"
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
 
         assert '--forcecolor' not in captured['cmd']
@@ -210,6 +222,10 @@ def test_converter_kcc_success_does_not_flag_fallback(monkeypatch):
 
     def fake_run(cmd, **kwargs):
         captured['cmd'] = cmd
+        output_dir = Path(cmd[cmd.index('-o') + 1])
+        title = cmd[cmd.index('-t') + 1]
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / f"{title}.kfx").write_bytes(b"generated")
         class FakeComp:
             def __init__(self):
                 self.returncode = 0
@@ -223,6 +239,38 @@ def test_converter_kcc_success_does_not_flag_fallback(monkeypatch):
         tmp_path = Path(tmp_dir)
         manga_dir = tmp_path / "manga"
         manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
         converter = KindleConverter(profile='K11', output_format='KFX')
+        converter.kcc_bin = "/usr/bin/fake-kcc"
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
         assert converter.last_fallback is False
+
+
+def test_converter_does_not_return_stale_output_when_kcc_creates_nothing(monkeypatch):
+    def fake_run(cmd, **kwargs):
+        class FakeComp:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        return FakeComp()
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+        stale = out_dir / "TestManga.epub"
+        stale.write_bytes(b"old")
+
+        converter = KindleConverter(profile='K11', output_format='EPUB')
+        converter.kcc_bin = "/usr/bin/fake-kcc"
+        result = converter.convert(manga_dir, out_dir, title="TestManga")
+
+        assert result == out_dir / "TestManga.cbz"
+        assert result.exists()
+        assert converter.last_fallback is True
+        assert stale.read_bytes() == b"old"
