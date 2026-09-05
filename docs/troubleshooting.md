@@ -77,18 +77,10 @@ Para auditar e verificar se todos os módulos do seu ambiente local estão funci
 
 ```bash
 # Executar a suíte completa de testes:
-pytest tests/
+python -m pytest tests/ -q
 ```
 
-Todas as 16 verificações unitárias devem passar com sucesso:
-```
-tests/test_colab_runner.py ..     [ 12%]
-tests/test_converter.py .         [ 18%]
-tests/test_extractor.py ..        [ 31%]
-tests/test_merger.py ..           [ 43%]
-tests/test_metadata.py ..         [ 56%]
-tests/test_pipeline.py .          [ 62%]
-tests/test_providers.py ..        [ 75%]
-tests/test_utils.py ....          [100%]
-====================== 16 passed in 9.80s ======================
-```
+Todos os testes devem passar no ambiente configurado. A contagem exibida pelo
+Pytest é intencionalmente variável, pois novos casos são adicionados ao longo
+do desenvolvimento. O mesmo comando é executado pelo workflow do GitHub
+Actions em pushes e pull requests para `main`.
