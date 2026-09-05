@@ -167,6 +167,12 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
     merger = VolumeMerger(manga_title=title)
     merged_files = merger.merge_all_volumes(inp, out, mapping=mapping)
 
+    if not merged_files:
+        raise click.ClickException(
+            "No volumes were created. MangaDex did not provide a reliable mapping; "
+            "pass a custom JSON/YAML mapping with --mapping."
+        )
+
     console.print(f"\n[bold green]Successfully created {len(merged_files)} Volume CBZ files in {out}[/bold green]")
 
 

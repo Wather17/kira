@@ -251,7 +251,14 @@ class VolumeMerger:
                 from kira.providers import OnlineMangaProvider
                 print(f"[Kira Merger] Querying online volume division for '{self.manga_title}'...")
                 fetched_map = OnlineMangaProvider.fetch_volume_chapter_mapping(self.manga_title)
-                vol_map = fetched_map if fetched_map else AOT_VOLUME_MAPPING
+                if not fetched_map:
+                    print(
+                        f"[Kira Merger] No reliable volume mapping found for '{self.manga_title}'. "
+                        "Skipping automatic merge; provide a custom mapping to continue."
+                    )
+                    vol_map = {}
+                else:
+                    vol_map = fetched_map
 
         elif isinstance(mapping, (str, Path)):
             vol_map = self.load_mapping(mapping)
@@ -289,4 +296,3 @@ class VolumeMerger:
 
         print(f"[Kira Merger] Successfully merged {len(output_files)} volumes for '{self.manga_title}'.")
         return output_files
-
