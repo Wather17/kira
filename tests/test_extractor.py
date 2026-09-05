@@ -2,6 +2,7 @@ import io
 import tempfile
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 from PIL import Image
 import pytest
 from kira.extractor import MangaExtractor
@@ -106,6 +107,59 @@ def test_extractor_rejects_zip_bomb_size():
         extractor = MangaExtractor(temp_dir=tmp_path / "out", max_total_uncompressed=10)
         with pytest.raises(ValueError, match="uncompressed size"):
             extractor.extract(cbz_file)
+
+
+@pytest.mark.parametrize(
+    ("members", "limit", "message"),
+    [
+        ([SimpleNamespace(filename="01.jpg", file_size=1, is_symlink=lambda: False)] * 2, 1, "entries"),
+        ([SimpleNamespace(filename="01.jpg", file_size=11, is_symlink=lambda: False)], 10, "uncompressed size"),
+    ],
+)
+def test_extractor_rejects_rar_limits_before_extraction(monkeypatch, members, limit, message):
+    class FakeArchive:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def infolist(self):
+            return members
+
+        def extractall(self, output_dir):
+            raise AssertionError("RAR extraction must not start after preflight rejection")
+
+    fake_rarfile = SimpleNamespace(RarFile=lambda path, mode: FakeArchive())
+    monkeypatch.setattr("kira.extractor.rarfile", fake_rarfile)
+
+    extractor = MangaExtractor(max_zip_entries=limit, max_total_uncompressed=10)
+    with pytest.raises(ValueError, match=message):
+        extractor._extract_rar(Path("unsafe.rar"), Path("output"))
+
+
+def test_extractor_rar_7z_preflight_rejects_before_extract(monkeypatch):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1] == "l":
+            return SimpleNamespace(
+                returncode=0,
+                stdout="----------\nPath = page.jpg\nSize = 11\nAttributes = .....\n",
+                stderr="",
+            )
+        raise AssertionError("7z extraction must not start after preflight rejection")
+
+    monkeypatch.setattr("kira.extractor.rarfile", None)
+    monkeypatch.setattr("kira.extractor.shutil.which", lambda name: "/usr/bin/7z")
+    monkeypatch.setattr("kira.extractor.subprocess.run", fake_run)
+
+    extractor = MangaExtractor(max_total_uncompressed=10)
+    with pytest.raises(ValueError, match="uncompressed size"):
+        extractor._extract_rar(Path("unsafe.rar"), Path("output"))
+
+    assert calls == [["/usr/bin/7z", "l", "-slt", "unsafe.rar"]]
 
 
 def test_extractor_accepts_legit_cbz():
