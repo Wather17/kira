@@ -86,20 +86,23 @@ class MangaExtractor:
 
     def _validate_zip_member(self, member: zipfile.ZipInfo) -> None:
         """Reject archive members with unsafe paths or symlinks."""
-        name = member.filename.replace("\\", "/")
-        if name.startswith("/") or os.path.isabs(member.filename):
+        self._validate_archive_member(member.filename, bool(member.external_attr >> 16 and stat.S_ISLNK(member.external_attr >> 16)))
+
+    def _validate_archive_member(self, filename: str, is_symlink: bool = False) -> None:
+        """Reject archive members with unsafe paths or symlinks."""
+        name = filename.replace("\\", "/")
+        if name.startswith("/") or os.path.isabs(filename):
             raise ValueError(
-                f"Archive entry {member.filename!r} rejected: absolute path is not allowed."
+                f"Archive entry {filename!r} rejected: absolute path is not allowed."
             )
         normalized = Path(os.path.normpath(name))
         if ".." in normalized.parts or ".." in name.split("/"):
             raise ValueError(
-                f"Archive entry {member.filename!r} rejected: path traversal is not allowed."
+                f"Archive entry {filename!r} rejected: path traversal is not allowed."
             )
-        mode = member.external_attr >> 16
-        if mode and stat.S_ISLNK(mode):
+        if is_symlink:
             raise ValueError(
-                f"Archive entry {member.filename!r} rejected: symlink entries are not allowed."
+                f"Archive entry {filename!r} rejected: symlink entries are not allowed."
             )
 
     def _extract_zip(self, zip_path: Path, output_dir: Path) -> None:
@@ -125,28 +128,84 @@ class MangaExtractor:
 
     def _extract_rar(self, rar_path: Path, output_dir: Path) -> None:
         """Extract RAR / CBR archive using rarfile or 7z system binary fallback."""
-        extracted = False
         if rarfile is not None:
             try:
                 with rarfile.RarFile(rar_path, 'r') as archive:
+                    self._validate_rar_members(archive.infolist(), rar_path)
                     archive.extractall(output_dir)
-                extracted = True
+                return
+            except ValueError:
+                raise
             except Exception:
-                extracted = False
+                pass
 
-        if not extracted:
-            # Fallback to system 7z binary if available
-            seven_zip = shutil.which('7z') or shutil.which('7za') or shutil.which('unrar')
-            if seven_zip:
-                cmd = [seven_zip, 'x', '-y', f'-o{output_dir}', str(rar_path)]
-                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                if res.returncode == 0:
-                    extracted = True
+        # Fallback to system 7z binary if available. List before extracting so
+        # the same entry and uncompressed-size limits apply to both backends.
+        seven_zip = shutil.which('7z') or shutil.which('7za') or shutil.which('unrar')
+        if seven_zip:
+            self._validate_7z_listing(seven_zip, rar_path)
+            cmd = [seven_zip, 'x', '-y', f'-o{output_dir}', str(rar_path)]
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if res.returncode == 0:
+                return
 
-        if not extracted:
-            raise RuntimeError(
-                f"Failed to extract RAR archive {rar_path}. Please install `unrar` or `p7zip-full`."
+        raise RuntimeError(
+            f"Failed to extract RAR archive {rar_path}. Please install `unrar` or `p7zip-full`."
+        )
+
+    def _validate_rar_members(self, members: List[object], rar_path: Path) -> None:
+        """Validate RAR metadata before any member is written to disk."""
+        if len(members) > self.max_zip_entries:
+            raise ValueError(
+                f"Archive {rar_path.name} rejected: {len(members)} entries exceeds "
+                f"the limit of {self.max_zip_entries}."
             )
+
+        total_size = 0
+        for member in members:
+            filename = str(getattr(member, "filename", ""))
+            self._validate_archive_member(
+                filename,
+                bool(getattr(member, "is_symlink", lambda: False)()),
+            )
+            total_size += int(getattr(member, "file_size", 0))
+
+        if total_size > self.max_total_uncompressed:
+            raise ValueError(
+                f"Archive {rar_path.name} rejected: uncompressed size {total_size} bytes "
+                f"exceeds the limit of {self.max_total_uncompressed} bytes."
+            )
+
+    def _validate_7z_listing(self, seven_zip: str, rar_path: Path) -> None:
+        """List a 7z-compatible archive and validate metadata before extraction."""
+        res = subprocess.run(
+            [seven_zip, 'l', '-slt', str(rar_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if res.returncode != 0:
+            raise RuntimeError(f"Failed to inspect RAR archive {rar_path} with {seven_zip}.")
+
+        members = []
+        listing = res.stdout.split("----------")[-1]
+        for block in listing.split("\n\n"):
+            fields = {}
+            for line in block.splitlines():
+                key, separator, value = line.partition(" = ")
+                if separator:
+                    fields[key] = value
+            if "Path" not in fields or "Size" not in fields:
+                continue
+            members.append(
+                type("SevenZipMember", (), {
+                    "filename": fields["Path"],
+                    "file_size": int(fields["Size"]),
+                    "is_symlink": lambda self, symlink="l" in fields.get("Attributes", "").lower(): symlink,
+                })()
+            )
+
+        self._validate_rar_members(members, rar_path)
 
     def cleanup(self, path: Optional[Path] = None) -> None:
         """Clean up extracted temporary files."""
