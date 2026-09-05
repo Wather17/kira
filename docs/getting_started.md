@@ -46,6 +46,13 @@ pip install --upgrade pip
 pip install -e .
 ```
 
+Para executar a suíte local sem instalar ferramentas opcionais:
+```bash
+python -m pip install --no-deps -e .
+python -m pip install pytest numpy Pillow opencv-python-headless natsort requests PyYAML click rich tqdm rarfile
+python -m pytest tests/ -q
+```
+
 ### Passo 4: Verificar a Instalação
 Execute o comando de ajuda para confirmar que o executável `kira` está ativo:
 ```bash

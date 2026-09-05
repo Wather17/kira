@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 from PIL import Image
+import pytest
 from kira.converter import KINDLE_PROFILES, KindleConverter
 
 
@@ -151,7 +152,8 @@ def test_converter_color_false_adds_no_forcecolor(monkeypatch):
 
 
 def test_converter_profiles_match_kcc(monkeypatch):
-    from kindlecomicconverter.image import ProfileData
+    profile_data = pytest.importorskip("kindlecomicconverter.image")
+    ProfileData = profile_data.ProfileData
     kcc_profiles = set(ProfileData.Profiles.keys())
     assert set(KINDLE_PROFILES.keys()) - kcc_profiles == set()
 
@@ -224,4 +226,3 @@ def test_converter_kcc_success_does_not_flag_fallback(monkeypatch):
         converter = KindleConverter(profile='K11', output_format='KFX')
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
         assert converter.last_fallback is False
-
