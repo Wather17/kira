@@ -31,7 +31,7 @@ def test_colab_setup_installs_kcc_via_pip_not_apt():
     assert result.exit_code == 0
     pip_cmd = [c for c in captured_cmds if c.startswith("pip install")]
     apt_cmd = [c for c in captured_cmds if c.startswith("apt-get")]
-    assert pip_cmd and "kindlecomicconverter" in pip_cmd[0]
+    assert pip_cmd and "git+https://github.com/ciromattia/kcc.git" in pip_cmd[0]
     assert apt_cmd and "kindlecomicconverter" not in apt_cmd[0] and " kcc " not in f" {apt_cmd[0]} "
 
 

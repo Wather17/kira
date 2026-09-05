@@ -221,7 +221,8 @@ def colab_setup():
 
     console.print("[bold cyan]Installing Kira dependencies for Google Colab...[/bold cyan]")
 
-    pip_cmd = "pip install -q torch torchvision realesrgan natsort tqdm Pillow opencv-python rich click PyYAML rarfile kindlecomicconverter"
+    kcc_source = "git+https://github.com/ciromattia/kcc.git"
+    pip_cmd = f"pip install -q torch torchvision realesrgan natsort tqdm Pillow opencv-python rich click PyYAML rarfile {kcc_source}"
     apt_cmd = "apt-get update -qq && apt-get install -y -qq p7zip-full unrar"
 
     if os.system(pip_cmd) != 0:
@@ -234,7 +235,7 @@ def colab_setup():
 
     kcc_bin = shutil.which("kcc-c2e") or shutil.which("kcc")
     if not kcc_bin:
-        console.print("[bold red]Error:[/bold red] KCC binary (kcc-c2e) not found after installation. Run `pip install kindlecomicconverter` and check PATH.")
+        console.print(f"[bold red]Error:[/bold red] KCC binary (kcc-c2e) not found after installation. Re-run `pip install {kcc_source}` and check PATH.")
         raise SystemExit(1)
 
     version_res = subprocess.run([kcc_bin], capture_output=True, text=True, timeout=60)
@@ -246,7 +247,7 @@ def colab_setup():
     if ver_match:
         major = int(ver_match.group(1))
         if 0 < major < 10:
-            console.print(f"[bold yellow]Warning:[/bold yellow] KCC major version {major} is below the supported threshold (>= 10). Reinstall with `pip install -U kindlecomicconverter`.")
+            console.print(f"[bold yellow]Warning:[/bold yellow] KCC major version {major} is below the supported threshold (>= 10). Reinstall with `pip install -U {kcc_source}`.")
             raise SystemExit(1)
     console.print("[bold green]Colab setup complete![/bold green]")
 

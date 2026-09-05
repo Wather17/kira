@@ -58,6 +58,14 @@ source venv/bin/activate
 pip install -e .
 ```
 
+O KCC é uma ferramenta opcional. Para conversões EPUB/KFX, instale a distribuição oficial diretamente do repositório:
+
+```bash
+pip install -e '.[kcc]'
+```
+
+Sem o KCC, o Kira continua funcionando e gera um CBZ como fallback.
+
 ---
 
 ## 💡 Exemplos de Uso

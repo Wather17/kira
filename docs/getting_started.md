@@ -46,6 +46,12 @@ pip install --upgrade pip
 pip install -e .
 ```
 
+O KCC é opcional e não vem do índice padrão do Python. Para habilitar a conversão Kindle em EPUB/KFX, instale a versão oficial do código-fonte:
+```bash
+pip install -e '.[kcc]'
+```
+Sem o KCC, o Kira usa o fallback CBZ e informa isso no processamento.
+
 ### Passo 4: Verificar a Instalação
 Execute o comando de ajuda para confirmar que o executável `kira` está ativo:
 ```bash
