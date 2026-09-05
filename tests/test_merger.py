@@ -88,6 +88,37 @@ def test_merge_all_volumes_resolves_apis_once_per_run(monkeypatch):
         assert len(covers_calls) == 1
 
 
+def test_merge_all_volumes_does_not_use_aot_mapping_when_api_fails(monkeypatch):
+    from kira.providers import OnlineMangaProvider
+
+    monkeypatch.setattr(
+        OnlineMangaProvider,
+        "fetch_volume_chapter_mapping",
+        classmethod(lambda cls, title: None),
+    )
+    monkeypatch.setattr(
+        OnlineMangaProvider,
+        "search_manga_metadata",
+        classmethod(lambda cls, title: None),
+    )
+    monkeypatch.setattr(
+        OnlineMangaProvider,
+        "fetch_volume_covers",
+        classmethod(lambda cls, title: {}),
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        chapters_dir = tmp_path / "chapters"
+        chapters_dir.mkdir()
+        (chapters_dir / "Death_Note_Ch_01.cbz").touch()
+
+        merger = VolumeMerger(manga_title="Death Note")
+        result = merger.merge_all_volumes(chapters_dir, tmp_path / "output")
+
+    assert result == []
+
+
 def test_find_chapter_files_ignores_volume_files():
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
@@ -142,4 +173,3 @@ def test_find_chapter_files_legit_names_still_match():
         merger = VolumeMerger(manga_title="TestManga")
         assert {f.name for f in merger.find_chapter_files(chapters_dir, 1)} == {"Chapter_01.cbz", "chapter_1"}
         assert {f.name for f in merger.find_chapter_files(chapters_dir, 13)} == {"Ch 13.5.zip"}
-
