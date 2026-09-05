@@ -149,3 +149,29 @@ def test_pipeline_keep_extracted_isolates_consecutive_items():
         assert len(converted_inputs[0]) == 1
         assert len(converted_inputs[1]) == 3
         assert len(list(work_base.iterdir())) == 2
+
+
+def test_pipeline_records_batch_failures_while_continuing():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        input_dir = tmp_path / "inputs"
+        input_dir.mkdir()
+        for name in ("good", "broken"):
+            item_dir = input_dir / name
+            item_dir.mkdir()
+            Image.new('RGB', (10, 10), color='white').save(item_dir / "page.jpg")
+
+        pipeline = MangaPipeline(output_format="CBZ", device="cpu")
+
+        def fake_process(item, output_dir):
+            if item.name == "broken":
+                raise ValueError("invalid archive")
+            return {"title": item.name}
+
+        pipeline.process_item = fake_process
+        results = pipeline.process_directory(input_dir, tmp_path / "output")
+
+        assert results == [{"title": "good"}]
+        assert pipeline.last_failures == [
+            {"item": str(input_dir / "broken"), "error": "invalid archive"}
+        ]

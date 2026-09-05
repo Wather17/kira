@@ -93,8 +93,17 @@ def process(
             # Directory containing subdirectories or archives
             results = pipeline.process_directory(inp, out)
             _print_summary(results)
+            failures = getattr(pipeline, "last_failures", [])
+            if failures:
+                details = "; ".join(
+                    f"{Path(failure['item']).name}: {failure['error']}"
+                    for failure in failures
+                )
+                raise click.ClickException(
+                    f"{len(failures)} item(s) failed during batch processing: {details}"
+                )
     else:
-        console.print(f"[bold red]Error:[/bold red] Input path '{input_path}' not found.")
+        raise click.ClickException(f"Input path '{input_path}' not found.")
 
 
 

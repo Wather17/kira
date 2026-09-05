@@ -69,6 +69,7 @@ class MangaPipeline:
 
         self.keep_extracted = keep_extracted
         self.keep_upscaled_cbz = keep_upscaled_cbz
+        self.last_failures: List[Dict[str, str]] = []
 
     def process_item(
         self,
@@ -181,6 +182,7 @@ class MangaPipeline:
         in_path = resolve_google_drive_path(str(input_dir))
         out_path = resolve_google_drive_path(str(output_dir))
         out_path.mkdir(parents=True, exist_ok=True)
+        self.last_failures = []
 
         if not in_path.exists():
             raise FileNotFoundError(f"Input directory not found: {in_path}")
@@ -228,5 +230,6 @@ class MangaPipeline:
                     results.append(stat)
             except Exception as e:
                 print(f"[Kira Pipeline Error] Failed to process '{item.name}': {e}")
+                self.last_failures.append({"item": str(item), "error": str(e)})
 
         return results
