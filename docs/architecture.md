@@ -76,7 +76,7 @@ flowchart TD
 ### 2.2. Otimização de Memória e VRAM no Upscale ([`kira/upscaler.py`](file:///home/henrique/projetos/kira/kira/upscaler.py))
 - **Processamento por Tiles (Mosaicos)**: Páginas de mangá podem atingir resoluções de 3000x4500 pixels. Rodar o modelo de IA na imagem inteira causaria `CUDA Out of Memory (OOM)`. O Kira utiliza divisão em blocos (`tile=400` pixels) com sobreposição suave.
 - **Inferência em FP16 (Half-Precision)**: Em GPUs modernas (NVIDIA T4, L4, A100, RTX), o uso de ponto flutuante de 16 bits dobra a velocidade de inferência e reduz pela metade o consumo de VRAM sem perda perceptível de qualidade para ilustrações em preto e branco.
-- **Downscale Inteligente para e-Ink**: Telas de Kindle possuem resoluções entre 1072x1448 (Paperwhite 3/4) e 1236x1680 (Paperwhite 5). Escalar uma imagem para 8K geraria arquivos gigantescos e lentos para o processador do Kindle. O Kira redimensiona proporcionalmente para o limite ideal da tela (`max_dimension=2400px`).
+- **Downscale Inteligente para e-Ink**: Telas de Kindle possuem resoluções entre 1072x1448 (Paperwhite 3/4) e 1236x1648 (Paperwhite 5). Escalar uma imagem para 8K geraria arquivos gigantescos e lentos para o processador do Kindle. O Kira redimensiona proporcionalmente para o limite ideal da tela (`max_dimension=2400px`).
 
 ### 2.3. Conformidade Comercial para Kindle ([`kira/metadata.py`](file:///home/henrique/projetos/kira/kira/metadata.py) e [`kira/converter.py`](file:///home/henrique/projetos/kira/kira/converter.py))
 - **`ComicInfo.xml`**: O padrão universal de metadados para quadrinhos é gerado com tags essenciais:

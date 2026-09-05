@@ -11,6 +11,7 @@ Ao executar o Kira, selecione a flag `-p` correspondente ao seu modelo de Kindle
 | Perfil (`-p`) | Modelo de Kindle | Tamanho da Tela | Resolução Ideal | Densidade |
 | :--- | :--- | :--- | :--- | :--- |
 | **`K11`** *(Padrão)* | Kindle Básico 11ª Geração (2022+) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
+| **`KPW5`** | Kindle Paperwhite 5 (11ª Geração) | 6.8 polegadas | **1236 × 1648** | 300 PPI |
 | **`KPW34`** | Kindle Paperwhite 3 e 4 (2015/2018) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
 | **`KV`** | Kindle Voyage (2014) | 6.0 polegadas | **1072 × 1448** | 300 PPI |
 | **`KPW`** | Kindle Paperwhite 1 e 2 (2012/2013) | 6.0 polegadas | **758 × 1024** | 212 PPI |
@@ -41,11 +42,11 @@ O formato padrão gerado pelo Kira é o **`.epub`**. A Amazon descontinuou o for
 Se você preferir transferir arquivos offline sem usar a nuvem da Amazon:
 
 1. Conecte o Kindle ao seu computador usando o cabo USB.
-2. Ao rodar o Kira, escolha o formato `.azw3` ou `.mobi`:
+2. Ao rodar o Kira, escolha o formato `.epub`:
    ```bash
    kira process -i "./meu_manga.cbz" -o "./saida" -p K11 -f EPUB
    ```
-3. Abra a unidade de disco do Kindle e copie o arquivo `.azw3` diretamente para a pasta **`documents/`**.
+3. Abra a unidade de disco do Kindle e copie o arquivo `.epub` diretamente para a pasta **`documents/`**.
 4. Ejete o Kindle com segurança.
 
 ---

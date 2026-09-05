@@ -6,7 +6,7 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-Real--ESRGAN-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Google Colab](https://img.shields.io/badge/Google_Colab-GPU_Accelerated-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=white)](https://colab.research.google.com/)
 [![Kindle](https://img.shields.io/badge/Kindle-Paperwhite%20%7C%20Oasis%20%7C%20Scribe-FF9900?style=for-the-badge&logo=amazon&logoColor=white)](https://www.amazon.com/sendtokindle)
-[![Tests](https://img.shields.io/badge/Tests-16%2F16%20Passed-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-Automated-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](tests/)
 
 **Pipeline de inteligência artificial de ponta a ponta para restauração, ampliação (upscale) e conversão profissional de mangás para leitores digitais Kindle (e-Ink).**
 
@@ -112,7 +112,7 @@ Toda a documentação detalhada do projeto está organizada na pasta [`docs/`](d
 | Perfil | Modelo do Leitor | Resolução Ideal |
 | :--- | :--- | :--- |
 | **`K11`** *(Padrão)* | Kindle Básico 11ª Geração (6.0") | **1072 × 1448** (300 PPI) |
-| **`KPW5`** | Kindle Paperwhite 11ª Geração (6.8") | **1236 × 1680** (300 PPI) |
+| **`KPW5`** | Kindle Paperwhite 11ª Geração (6.8") | **1236 × 1648** (300 PPI) |
 | **`KO`** | Kindle Oasis 2 e 3 (7.0") | **1264 × 1680** (300 PPI) |
 | **`KS`** | Kindle Scribe (10.2") | **1860 × 2480** (300 PPI) |
 | **`KPW34`** | Kindle Paperwhite 3 e 4 (6.0") | **1072 × 1448** (300 PPI) |
@@ -129,9 +129,7 @@ O Kira conta com uma suíte abrangente de testes unitários para garantir a conf
 ```bash
 pytest tests/
 ```
-```
-============================== 16 passed in 9.80s ==============================
-```
+O workflow do GitHub Actions executa essa mesma suíte em cada push e pull request para `main`. A quantidade de testes pode mudar conforme novos casos são adicionados.
 
 ---
 
