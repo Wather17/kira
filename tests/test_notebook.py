@@ -42,6 +42,7 @@ def test_notebook_has_one_canonical_pipeline_configuration():
         "Max_Dimension_Px",
         "Kindle_Device",
         "Output_Format",
+        "Cropping_Mode",
         "Gamma_Correction",
         "Keep_Upscaled_CBZ",
     ):
@@ -54,9 +55,10 @@ def test_notebook_configuration_matches_cli_choices():
     assert 'Kindle_Device = "K11"' in source
     assert '"KPW34"' in source
     assert '"KPW3"' in source
-    assert 'Output_Format = "EPUB"' in source
-    assert '"AZW3"' in source
-    assert '"MOBI"' in source
+    assert 'Output_Format = "EPUB" #@param ["EPUB", "CBZ", "KFX"]' in source
+    assert 'Cropping_Mode = 0 #@param [0, 1, 2]' in source
+    assert "cropping=Cropping_Mode" in source
+    assert "AZW3" in source and "MOBI" in source
 
 
 def test_notebook_has_one_fail_fast_bootstrap_with_validation():
