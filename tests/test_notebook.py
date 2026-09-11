@@ -4,6 +4,7 @@ from pathlib import Path
 
 NOTEBOOK_PATH = Path(__file__).parents[1] / "Kira_Manga_Pipeline.ipynb"
 CONFIG_TITLE = "#@title ⚙️ Configurações do Pipeline do Kira"
+BOOTSTRAP_MARKERS = ("apt-get", "KIRA_ROOT", "pip", "git")
 
 
 def _config_cells():
@@ -13,6 +14,16 @@ def _config_cells():
         for cell in notebook["cells"]
         if cell.get("cell_type") == "code" and CONFIG_TITLE in "".join(cell.get("source", []))
     ]
+
+
+def _bootstrap_cells():
+    notebook = json.loads(NOTEBOOK_PATH.read_text(encoding="utf-8"))
+    cells = []
+    for cell in notebook["cells"]:
+        source = "".join(cell.get("source", []))
+        if cell.get("cell_type") == "code" and all(marker in source for marker in BOOTSTRAP_MARKERS):
+            cells.append(source)
+    return cells
 
 
 def test_notebook_has_one_canonical_pipeline_configuration():
@@ -46,3 +57,16 @@ def test_notebook_configuration_matches_cli_choices():
     assert 'Output_Format = "EPUB"' in source
     assert '"AZW3"' in source
     assert '"MOBI"' in source
+
+
+def test_notebook_has_one_fail_fast_bootstrap_with_validation():
+    bootstrap_cells = _bootstrap_cells()
+
+    assert len(bootstrap_cells) == 1
+    source = bootstrap_cells[0]
+    assert "subprocess.run" in source
+    assert "check=True" in source
+    assert "pip\", \"check" in source
+    assert "kira.pipeline" in source
+    assert "kcc-c2e" in source
+    assert "|| true" not in source
