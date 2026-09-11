@@ -33,8 +33,10 @@ Se você preferir uma interface visual em células interativas:
    - Menu: **Ambiente de Execução** ➔ **Alterar tipo de ambiente de execução** ➔ **T4 GPU**.
 3. Execute as células sequencialmente:
    - **Célula 1**: Montagem do Google Drive (`drive.mount('/content/drive')`).
-   - **Célula 2**: Instalação automática do Kira e do Real-ESRGAN.
-   - **Célula 3**: Execução do pipeline em lote apontando para suas pastas.
+   - **Célula 2**: Bootstrap único do Kira, dependências, ferramentas de arquivo e KCC. A célula valida o checkout, as dependências, o import do pipeline e a versão do KCC antes de concluir.
+   - **Célula 3**: Formulário de configuração e execução do pipeline em lote apontando para suas pastas.
+
+O bootstrap deve ser executado uma única vez por ambiente de execução. Em caso de falha, corrija a mensagem exibida e execute novamente em um runtime limpo.
 
 ---
 
