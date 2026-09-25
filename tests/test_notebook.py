@@ -72,3 +72,12 @@ def test_notebook_has_one_fail_fast_bootstrap_with_validation():
     assert "kira.pipeline" in source
     assert "kcc-c2e" in source
     assert "|| true" not in source
+
+
+def test_runtime_dependencies_pin_python313_compatible_basicsr():
+    expected = "basicsr @ git+https://github.com/Disty0/BasicSR.git@23c1fb6f5c559ef5ce7ad657f2fa56e41b121754"
+    pyproject = (NOTEBOOK_PATH.parent / "pyproject.toml").read_text(encoding="utf-8")
+    requirements = (NOTEBOOK_PATH.parent / "requirements.txt").read_text(encoding="utf-8")
+
+    assert expected in pyproject
+    assert expected in requirements
