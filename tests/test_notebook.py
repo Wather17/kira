@@ -81,3 +81,13 @@ def test_runtime_dependencies_pin_python313_compatible_basicsr():
 
     assert expected in pyproject
     assert expected in requirements
+
+
+def test_bootstrap_repairs_colab_ipython_before_strict_dependency_check():
+    source = _bootstrap_cells()[0]
+    kcc_install = '"git+https://github.com/ciromattia/kcc.git"'
+    jedi_install = '"jedi>=0.16"'
+    pip_check = 'run_checked([sys.executable, "-m", "pip", "check"]'
+
+    assert source.index(kcc_install) < source.index(jedi_install) < source.index(pip_check)
+    assert '"Validar dependências Python"' in source
