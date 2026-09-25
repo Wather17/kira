@@ -21,34 +21,51 @@ mkdir -p -- "$ISSUES_DIR"
 
 printf 'Sincronizando issues abertas do GitHub...\n'
 
-# O cache atual só é substituído depois que a consulta e todos os detalhes
-# das issues terminarem com sucesso.
-if ! issues=$(gh issue list --state open --limit 1000 --json number --jq '.[].number'); then
+# O cache atual só é substituído depois que a consulta e o processamento de
+# todas as issues terminarem com sucesso.
+tmp_dir=$(mktemp -d "${ISSUES_DIR}.tmp.XXXXXX")
+issue_data="$tmp_dir/issues.tsv"
+
+# Uma única consulta traz todos os dados necessários. Cada campo é codificado
+# individualmente para que tabs e quebras de linha do título, corpo ou
+# comentários não quebrem o protocolo TSV consumido pelo Bash abaixo.
+if ! gh issue list \
+  --state open \
+  --limit 1000 \
+  --json number,title,body,labels,comments \
+  --jq '.[] | [(.number | tostring), (.title // ""), (.labels | map(.name) | join(", ")), (.body // ""), (.comments | map("### Comentário por @\(.author.login):\n\(.body)\n") | join("\n"))] | map(@base64) | @tsv' \
+  > "$issue_data"; then
   printf 'Erro: não foi possível consultar as issues abertas. Verifique a autenticação e a conexão.\n' >&2
   exit 1
 fi
 
-tmp_dir=$(mktemp -d "${ISSUES_DIR}.tmp.XXXXXX")
+if printf '' | base64 --decode >/dev/null 2>&1; then
+  base64_decode=(base64 --decode)
+else
+  base64_decode=(base64 -D)
+fi
+
+decode_base64() {
+  printf '%s' "$1" | "${base64_decode[@]}"
+}
+
 count=0
 
-for num in $issues; do
-  if ! title=$(gh issue view "$num" --json title --jq '.title'); then
-    printf 'Erro: não foi possível obter o título da issue #%s.\n' "$num" >&2
+while IFS= read -r record || [[ -n "$record" ]]; do
+  # O registro é produzido pelo --jq acima, portanto deve sempre conter
+  # exatamente quatro tabs separando os cinco campos codificados.
+  record_without_tabs="${record//$'\t'/}"
+  tab_count=$((${#record} - ${#record_without_tabs}))
+  if ((tab_count != 4)); then
+    printf 'Erro: resposta inválida ao consultar as issues abertas.\n' >&2
     exit 1
   fi
 
-  if ! labels=$(gh issue view "$num" --json labels --jq '[.labels[].name] | join(", ")'); then
-    printf 'Erro: não foi possível obter as labels da issue #%s.\n' "$num" >&2
-    exit 1
-  fi
-
-  if ! body=$(gh issue view "$num" --json body --jq '.body'); then
-    printf 'Erro: não foi possível obter a descrição da issue #%s.\n' "$num" >&2
-    exit 1
-  fi
-
-  if ! comments=$(gh issue view "$num" --json comments --jq '.comments[] | "### Comentário por @\(.author.login):\n\(.body)\n"'); then
-    printf 'Erro: não foi possível obter a discussão da issue #%s.\n' "$num" >&2
+  IFS=$'\t' read -r encoded_num encoded_title encoded_labels encoded_body encoded_comments <<< "$record"
+  if ! num=$(decode_base64 "$encoded_num") || ! title=$(decode_base64 "$encoded_title") \
+    || ! labels=$(decode_base64 "$encoded_labels") || ! body=$(decode_base64 "$encoded_body") \
+    || ! comments=$(decode_base64 "$encoded_comments"); then
+    printf 'Erro: resposta inválida ao consultar os dados das issues abertas.\n' >&2
     exit 1
   fi
 
@@ -78,7 +95,7 @@ for num in $issues; do
   } > "$tmp_dir/$filename"
 
   count=$((count + 1))
-done
+done < "$issue_data"
 
 shopt -s nullglob
 old_files=("$ISSUES_DIR"/*.md)
