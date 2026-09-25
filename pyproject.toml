@@ -13,6 +13,7 @@ requires-python = ">=3.9"
 dependencies = [
     "torch>=2.0.0",
     "torchvision>=0.15.0",
+    "basicsr @ git+https://github.com/Disty0/BasicSR.git@23c1fb6f5c559ef5ce7ad657f2fa56e41b121754",
     "realesrgan>=0.3.0",
     "Pillow>=9.0.0",
     "opencv-python>=4.5.0",

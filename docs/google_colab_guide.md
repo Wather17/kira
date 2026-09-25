@@ -38,6 +38,8 @@ Se você preferir uma interface visual em células interativas:
 
 O bootstrap deve ser executado uma única vez por ambiente de execução. Em caso de falha, corrija a mensagem exibida e execute novamente em um runtime limpo.
 
+O runtime atual do Colab usa Python 3.13. Para evitar a falha `KeyError: '__version__'` durante a instalação do `basicsr` publicado no PyPI, o Kira fixa no `pyproject.toml` e no `requirements.txt` uma revisão compatível do BasicSR. Se a instalação falhar, preserve o stderr completo exibido pelo bootstrap; não substitua a instalação por `pip install --no-deps`.
+
 Na célula de configuração, `Cropping_Mode` usa `0` para preservar a página, `1` para remover margens e `2` para remover margens e numeração. Os formatos interativos são `EPUB`, `CBZ` e `KFX`; `AZW3` e `MOBI` são aliases legados da CLI e são convertidos para `EPUB`.
 
 ---
