@@ -41,6 +41,10 @@ kira process [OPÇÕES]
 | `--manga-style / --webtoon` | `FLAG` | `--manga-style` | Leitura da direita para a esquerda (Mangá) ou rolagem contínua (Webtoon). |
 | `--gamma` | `FLOAT` | `1.0` | Correção gama de contraste para telas e-Ink (ex: 1.1 para tons mais escuros). |
 | `--cropping` | `INT` | `0` | Modo de corte automático do KCC (`0` desabilitado — preserva a página original, `1` margens, `2` margens + número de página). |
+| `--preserve-margin` | `INT` | `0` | Percentual de margem que o KCC preserva depois do crop. |
+| `--canvas / --no-canvas` | `FLAG` | `--no-canvas` | Normaliza páginas EPUB para o canvas seguro do K11. Disponível apenas para EPUB/K11. |
+| `--canvas-top` / `--canvas-bottom` | `FLOAT` | `8.0` / `8.0` | Margens de segurança superior e inferior do canvas, em percentual. |
+| `--canvas-left` / `--canvas-right` | `FLOAT` | `3.0` / `3.0` | Margens de segurança laterais do canvas, em percentual. |
 | `--keep-extracted` | `FLAG` | `False` | Manter a pasta de imagens descompactadas após o término. |
 | `--keep-cbz / --no-keep-cbz`| `FLAG` | `--keep-cbz` | Salvar uma cópia das imagens ampliadas em `.cbz` na pasta de saída. |
 
@@ -51,7 +55,16 @@ kira process -i "./mangas/Monster_Vol_01.cbz" -o "./kindle" -p KPW5 -f EPUB
 
 # Processar pasta com vários volumes para Kindle Scribe em alta definição
 kira process -i "./Manga_Inputs" -o "./Kindle_Outputs" -p KS -m RealESRGAN_x4plus_anime_6B --gamma 1.05
+
+# Ativar o canvas K11 com o crop/margem usado na bateria de testes
+kira process -i "./manga.cbz" -o "./kindle" -p K11 -f EPUB \
+  --cropping 2 --preserve-margin 50 --canvas
 ```
+
+O canvas é opcional e, nesta primeira versão, funciona somente para EPUB no
+perfil K11. Com `--hq`, o canvas físico é `1608×2172` pixels, equivalente à
+área lógica K11 de `1072×1448`. O conteúdo é encaixado sem distorção, com
+fundo detectado por página e margens independentes.
 
 ---
 
@@ -73,6 +86,11 @@ kira colab-run [OPÇÕES]
 | `-m, --model` | `CHOICE` | `RealESRGAN_x4plus_anime_6B` | Modelo Real-ESRGAN a ser utilizado. |
 | `-p, --profile` | `CHOICE` | `K11` | Perfil do Kindle. |
 | `-f, --format` | `CHOICE` | `EPUB` | Formato de saída. |
+| `--cropping` | `INT` | `0` | Modo de corte automático do KCC. |
+| `--preserve-margin` | `INT` | `0` | Percentual de margem preservado pelo KCC. |
+| `--canvas / --no-canvas` | `FLAG` | `--no-canvas` | Canvas seguro K11 para EPUB. |
+| `--canvas-top/bottom` | `FLOAT` | `8.0` / `8.0` | Margens verticais do canvas, em percentual. |
+| `--canvas-left/right` | `FLOAT` | `3.0` / `3.0` | Margens laterais do canvas, em percentual. |
 | `--session-name` | `TEXT` | `kira-gpu-worker` | Nome da sessão no Colab CLI. |
 | `--auto-stop / --no-stop` | `FLAG` | `--auto-stop` | Liberar a VM e parar a GPU imediatamente ao finalizar o lote. |
 

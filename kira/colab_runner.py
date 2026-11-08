@@ -24,6 +24,13 @@ def _build_remote_script_code(
     output_format: str,
     tile: int,
     workers: int,
+    cropping: int = 0,
+    preserve_margin: int = 0,
+    canvas_enabled: bool = False,
+    canvas_top: float = 8.0,
+    canvas_bottom: float = 8.0,
+    canvas_left: float = 3.0,
+    canvas_right: float = 3.0,
 ) -> str:
     """Build the remote Python script that runs the Kira pipeline via argv (no shell)."""
     return f"""
@@ -67,6 +74,13 @@ profile = {json.dumps(profile)}
 output_format = {json.dumps(output_format)}
 tile = {json.dumps(tile)}
 workers = {json.dumps(workers)}
+cropping = {json.dumps(cropping)}
+preserve_margin = {json.dumps(preserve_margin)}
+canvas_enabled = {json.dumps(canvas_enabled)}
+canvas_top = {json.dumps(canvas_top)}
+canvas_bottom = {json.dumps(canvas_bottom)}
+canvas_left = {json.dumps(canvas_left)}
+canvas_right = {json.dumps(canvas_right)}
 
 input_resolved = resolve_remote_path(input_path)
 output_resolved = resolve_remote_path(output_dir)
@@ -74,15 +88,28 @@ output_resolved = resolve_remote_path(output_dir)
 print('[Remote Colab Worker] Running Kira Manga Pipeline (High-Performance GPU mode)...')
 print(f"[Remote Colab Worker] Input: {{input_resolved}} -> Output: {{output_resolved}}")
 try:
+    command = [
+        'kira', 'process',
+        '-i', str(input_resolved),
+        '-o', str(output_resolved),
+        '-m', model,
+        '-p', profile,
+        '-f', output_format,
+        '--tile', str(tile),
+        '--workers', str(workers),
+        '--cropping', str(cropping),
+        '--preserve-margin', str(preserve_margin),
+    ]
+    if canvas_enabled:
+        command.extend([
+            '--canvas',
+            '--canvas-top', str(canvas_top),
+            '--canvas-bottom', str(canvas_bottom),
+            '--canvas-left', str(canvas_left),
+            '--canvas-right', str(canvas_right),
+        ])
     res = subprocess.run(
-        ['kira', 'process',
-         '-i', str(input_resolved),
-         '-o', str(output_resolved),
-         '-m', model,
-         '-p', profile,
-         '-f', output_format,
-         '--tile', str(tile),
-         '--workers', str(workers)],
+        command,
         text=True,
     )
 except Exception as e:
@@ -103,6 +130,13 @@ def run_pipeline_on_colab(
     session_name: str = "kira-remote",
     tile: int = 600,
     workers: int = 2,
+    cropping: int = 0,
+    preserve_margin: int = 0,
+    canvas_enabled: bool = False,
+    canvas_top: float = 8.0,
+    canvas_bottom: float = 8.0,
+    canvas_left: float = 3.0,
+    canvas_right: float = 3.0,
     auto_stop: bool = True
 ) -> bool:
     """
@@ -141,6 +175,13 @@ def run_pipeline_on_colab(
             output_format=output_format,
             tile=tile,
             workers=workers,
+            cropping=cropping,
+            preserve_margin=preserve_margin,
+            canvas_enabled=canvas_enabled,
+            canvas_top=canvas_top,
+            canvas_bottom=canvas_bottom,
+            canvas_left=canvas_left,
+            canvas_right=canvas_right,
         )
 
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:

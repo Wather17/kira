@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 from PIL import Image
 import pytest
+from kira.canvas import CanvasConfig
 from kira.converter import KINDLE_PROFILES, KindleConverter
 
 
@@ -94,6 +95,81 @@ def test_converter_sends_cropping_2_when_requested(monkeypatch):
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
         idx = captured['cmd'].index('-c')
         assert captured['cmd'][idx + 1] == '2'
+
+
+def test_converter_sends_preserve_margin_when_requested(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured['cmd'] = cmd
+        class FakeComp:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        return FakeComp()
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
+        converter = KindleConverter(preserve_margin=50)
+        converter.kcc_bin = "/usr/bin/fake-kcc"
+        converter.convert(manga_dir, tmp_path / "out", title="TestManga")
+
+    assert captured['cmd'][captured['cmd'].index('--preservemargin') + 1] == '50'
+
+
+def test_converter_applies_canvas_only_after_epub_output(monkeypatch):
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        output_dir = Path(cmd[cmd.index('-o') + 1])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output = output_dir / "TestManga.epub"
+        output.write_bytes(b"epub")
+        return type("FakeComp", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_canvas(path, config, profile, hq, allow_upscale):
+        captured.update({
+            "path": path,
+            "config": config,
+            "profile": profile,
+            "hq": hq,
+            "allow_upscale": allow_upscale,
+        })
+        return path
+
+    monkeypatch.setattr("kira.converter.subprocess.run", fake_run)
+    monkeypatch.setattr("kira.converter.normalize_epub", fake_canvas)
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        manga_dir = tmp_path / "manga"
+        manga_dir.mkdir()
+        _seed_input_directory(manga_dir)
+        config = CanvasConfig(enabled=True)
+        converter = KindleConverter(canvas=config, hq=True, upscale=False)
+        converter.kcc_bin = "/usr/bin/fake-kcc"
+        output = converter.convert(manga_dir, tmp_path / "out", title="TestManga")
+
+    assert output.name == "TestManga.epub"
+    assert captured["config"] is config
+    assert captured["profile"] == "K11"
+    assert captured["hq"] is True
+    assert captured["allow_upscale"] is False
+
+
+def test_converter_rejects_canvas_for_non_epub(tmp_path: Path):
+    manga_dir = tmp_path / "manga"
+    manga_dir.mkdir()
+    _seed_input_directory(manga_dir)
+    converter = KindleConverter(output_format="CBZ", canvas=CanvasConfig(enabled=True))
+
+    with pytest.raises(ValueError, match="only for EPUB"):
+        converter.convert(manga_dir, tmp_path / "out", title="TestManga")
 
 
 def test_converter_cropping_independent_of_profile():

@@ -21,7 +21,8 @@ def test_remote_script_uses_argv_not_shell():
         workers=2,
     )
     assert "subprocess.run(" in script
-    assert "['kira', 'process'" in script
+    assert "command = [" in script
+    assert "'kira', 'process'" in script
     assert "os.system('kira process" not in script
     assert "resolve_remote_path" in script
 

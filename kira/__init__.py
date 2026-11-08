@@ -6,6 +6,7 @@ __version__ = "0.1.0"
 __author__ = "Kira Team"
 
 from kira.pipeline import MangaPipeline
+from kira.canvas import CanvasConfig
 from kira.extractor import MangaExtractor
 from kira.upscaler import MangaUpscaler
 from kira.converter import KindleConverter
@@ -16,6 +17,7 @@ from kira.colab_runner import run_pipeline_on_colab
 
 __all__ = [
     "MangaPipeline",
+    "CanvasConfig",
     "MangaExtractor",
     "MangaUpscaler",
     "KindleConverter",

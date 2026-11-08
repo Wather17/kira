@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from kira.canvas import CanvasConfig, normalize_epub
 from kira.utils import create_cbz_archive
 
 # Popular Kindle Device Profiles supported by the installed KCC (v11.x)
@@ -45,6 +46,8 @@ class KindleConverter:
         webtoon: bool = False,
         color: bool = False,
         cropping: int = 0,
+        preserve_margin: int = 0,
+        canvas: Optional[CanvasConfig] = None,
     ):
         profile = profile.upper()
         if profile in PROFILE_ALIASES:
@@ -69,6 +72,12 @@ class KindleConverter:
         self.webtoon = webtoon
         self.color = color
         self.cropping = cropping
+        if not 0 <= preserve_margin <= 99:
+            raise ValueError("preserve_margin must be between 0 and 99")
+        self.preserve_margin = preserve_margin
+        self.canvas = canvas or CanvasConfig(enabled=False)
+        if self.canvas.enabled and self.profile != "K11":
+            raise ValueError("canvas normalization currently supports only the K11 profile")
         self.last_fallback = False
 
         self.kcc_bin = self._find_kcc_binary()
@@ -133,6 +142,11 @@ class KindleConverter:
         output_dir = Path(output_dir).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        if self.canvas.enabled and self.output_format != 'EPUB':
+            raise ValueError("canvas normalization is currently supported only for EPUB output")
+        if self.canvas.enabled and not self.kcc_bin:
+            raise RuntimeError("canvas normalization requires the KCC executable")
+
         book_title = title or input_path.stem
 
         if self.output_format == 'CBZ':
@@ -172,6 +186,8 @@ class KindleConverter:
 
         # Cropping mode (0=disabled default preserves original page art)
         cmd.extend(['-c', str(self.cropping)])
+        if self.preserve_margin:
+            cmd.extend(['--preservemargin', str(self.preserve_margin)])
 
         if self.manga_style:
             cmd.append('-m')  # Right-to-Left reading order for manga
@@ -197,6 +213,8 @@ class KindleConverter:
         if res.returncode != 0:
             err_msg = res.stderr.strip() or res.stdout.strip()
             print(f"[Kira Warning] KCC returned error: {err_msg}")
+            if self.canvas.enabled:
+                raise RuntimeError(f"KCC conversion failed while canvas normalization was enabled: {err_msg}")
             print("[Kira] Attempting CBZ fallback creation...")
             self.last_fallback = True
             return self._fallback_cbz_convert(input_path, output_dir, title)
@@ -205,7 +223,7 @@ class KindleConverter:
         target_file = output_dir / f"{title}{expected_ext}"
 
         if target_file.exists() and self._was_created_or_updated(target_file, before):
-            return target_file
+            return self._finalize_output(target_file)
 
         # Check for generated files using only artifacts created or changed by this run.
         supported_exts = [expected_ext]
@@ -218,8 +236,8 @@ class KindleConverter:
                     desired_file = output_dir / f"{title}{cand.suffix}"
                     if cand != desired_file:
                         shutil.move(cand, desired_file)
-                        return desired_file
-                    return cand
+                        return self._finalize_output(desired_file)
+                    return self._finalize_output(cand)
 
         # Fallback check
         matches = [
@@ -229,12 +247,23 @@ class KindleConverter:
             and self._was_created_or_updated(f, before)
         ]
         if matches:
-            return matches[0]
+            return self._finalize_output(matches[0])
 
         print("[Kira Warning] KCC returned success but produced no new compatible output.")
         print("[Kira] Attempting CBZ fallback creation...")
         self.last_fallback = True
         return self._fallback_cbz_convert(input_path, output_dir, title)
+
+    def _finalize_output(self, output_file: Path) -> Path:
+        if self.canvas.enabled:
+            normalize_epub(
+                output_file,
+                self.canvas,
+                profile=self.profile,
+                hq=self.hq,
+                allow_upscale=self.upscale,
+            )
+        return output_file
 
     @staticmethod
     def _was_created_or_updated(path: Path, before: Dict[Path, tuple]) -> bool:
