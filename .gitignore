@@ -36,6 +36,10 @@ kira_work_*
 .coverage
 htmlcov/
 
+# Local Kindle test artifacts (source CBZ, generated EPUBs and comparisons)
+tests/artifacts/*
+!tests/artifacts/README.md
+
 # Local data / scratch
 scratch/
 tmp/
