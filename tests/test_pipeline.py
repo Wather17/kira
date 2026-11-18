@@ -2,9 +2,28 @@ import tempfile
 import shutil
 from pathlib import Path
 from unittest.mock import patch
+import pytest
 from PIL import Image
+from kira.canvas import CanvasConfig
 from kira.pipeline import MangaPipeline
 from kira.utils import create_cbz_archive
+
+
+@pytest.mark.parametrize("profile,output_format,enabled", [
+    ("K11", "EPUB", True),
+    ("K11", "AZW3", True),
+    ("K11", "CBZ", False),
+    ("K11", "KFX", False),
+    ("KPW5", "EPUB", False),
+])
+def test_pipeline_canvas_default(profile, output_format, enabled):
+    pipeline = MangaPipeline(kindle_profile=profile, output_format=output_format)
+    assert pipeline.converter.canvas == CanvasConfig(enabled=enabled)
+
+
+def test_pipeline_preserves_canvas_opt_out():
+    config = CanvasConfig(enabled=False)
+    assert MangaPipeline(canvas=config).converter.canvas == config
 
 
 def _make_cbz(tmp_path: Path, title: str, n_pages: int) -> Path:

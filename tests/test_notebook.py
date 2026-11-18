@@ -43,6 +43,12 @@ def test_notebook_has_one_canonical_pipeline_configuration():
         "Kindle_Device",
         "Output_Format",
         "Cropping_Mode",
+        "Preserve_Margin",
+        "Canvas_Mode",
+        "Canvas_Top_Margin",
+        "Canvas_Bottom_Margin",
+        "Canvas_Left_Margin",
+        "Canvas_Right_Margin",
         "Gamma_Correction",
         "Keep_Upscaled_CBZ",
     ):
@@ -58,6 +64,11 @@ def test_notebook_configuration_matches_cli_choices():
     assert 'Output_Format = "EPUB" #@param ["EPUB", "CBZ", "KFX"]' in source
     assert 'Cropping_Mode = 0 #@param [0, 1, 2]' in source
     assert "cropping=Cropping_Mode" in source
+    assert "preserve_margin=Preserve_Margin" in source
+    assert 'Canvas_Mode = "auto" #@param ["auto", "on", "off"]' in source
+    assert 'enabled={"auto": None, "on": True, "off": False}[Canvas_Mode]' in source
+    assert "Canvas_Top_Margin = 2.0" in source
+    assert "Canvas_Bottom_Margin = 2.0" in source
     assert "AZW3" in source and "MOBI" in source
 
 
