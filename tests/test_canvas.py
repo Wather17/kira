@@ -15,7 +15,7 @@ def _jpeg_bytes(image: Image.Image) -> bytes:
     return output.getvalue()
 
 
-def _write_fixture_epub(path: Path) -> None:
+def _write_fixture_epub(path: Path, landscape: bool = False) -> None:
     container = b'''<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
   <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
@@ -43,6 +43,9 @@ def _write_fixture_epub(path: Path) -> None:
     for x in range(20, 80):
         for y in range(20, 130):
             page.putpixel((x, y), (0, 0, 0))
+
+    if landscape:
+        page = page.transpose(Image.Transpose.ROTATE_90)
 
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("mimetype", b"application/epub+zip", compress_type=zipfile.ZIP_STORED)
@@ -87,29 +90,34 @@ def test_fit_image_to_canvas_uses_independent_margins_and_preserves_background()
     assert dark_bbox[3] <= 240
 
 
-def test_normalize_epub_updates_content_images_and_panel_view(tmp_path: Path):
+@pytest.mark.parametrize("hq,landscape,physical,logical", [
+    (False, False, (1072, 1448), (1072, 1448)),
+    (True, False, (1608, 2172), (1072, 1448)),
+    (True, True, (2172, 1608), (1448, 1072)),
+])
+def test_normalize_epub_updates_content_images_and_panel_view(tmp_path, hq, landscape, physical, logical):
     epub = tmp_path / "fixture.epub"
-    _write_fixture_epub(epub)
-    config = CanvasConfig(enabled=True, top_margin_pct=8, bottom_margin_pct=8, left_margin_pct=3, right_margin_pct=3)
+    _write_fixture_epub(epub, landscape=landscape)
+    config = CanvasConfig(enabled=True)
 
-    normalize_epub(epub, config, profile="K11", hq=False)
+    normalize_epub(epub, config, profile="K11", hq=hq)
 
     with zipfile.ZipFile(epub) as archive:
         assert archive.namelist()[0] == "mimetype"
         assert archive.getinfo("mimetype").compress_type == zipfile.ZIP_STORED
 
         with Image.open(BytesIO(archive.read("OEBPS/Images/page.jpg"))) as page:
-            assert page.size == (1072, 1448)
+            assert page.size == physical
         with Image.open(BytesIO(archive.read("OEBPS/Images/cover.jpg"))) as cover:
             assert cover.size == (10, 10)
 
         page_xml = ET.fromstring(archive.read("OEBPS/Text/page.xhtml"))
         images = [node for node in page_xml.iter() if node.tag.endswith("img")]
         assert len(images) == 2
-        assert all(node.get("width") == "1072" for node in images)
-        assert all(node.get("height") == "1448" for node in images)
+        assert all(node.get("width") == str(logical[0]) for node in images)
+        assert all(node.get("height") == str(logical[1]) for node in images)
         viewport = next(node for node in page_xml.iter() if node.tag.endswith("meta"))
-        assert viewport.get("content") == "width=1072, height=1448"
+        assert viewport.get("content") == f"width={logical[0]}, height={logical[1]}"
 
 
 def test_normalize_epub_is_noop_when_disabled(tmp_path: Path):

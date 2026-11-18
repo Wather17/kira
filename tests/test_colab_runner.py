@@ -1,6 +1,24 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import pytest
 from kira.colab_runner import _build_remote_script_code, is_colab_cli_available, run_pipeline_on_colab
+
+
+@pytest.mark.parametrize("enabled,flag", [(None, None), (True, "--canvas"), (False, "--no-canvas")])
+def test_remote_script_passes_canvas_mode_and_margins(enabled, flag):
+    script = _build_remote_script_code(
+        "manga", "output", "model", "K11", "EPUB", 600, 2,
+        canvas_enabled=enabled, canvas_top=4.0,
+    )
+    with patch("os.path.exists", return_value=True), patch("os.system"), patch("subprocess.run") as run:
+        run.return_value.returncode = 0
+        exec(script, {})
+    install, process = [call.args[0] for call in run.call_args_list]
+    assert any("kira-manga[kcc]" in arg for arg in install)
+    canvas_flags = [arg for arg in process if arg in {"--canvas", "--no-canvas"}]
+    assert canvas_flags == ([] if flag is None else [flag])
+    if enabled is not False:
+        assert process[process.index("--canvas-top") + 1] == "4.0"
 
 def test_is_colab_cli_available():
     with patch("shutil.which", return_value="/usr/bin/colab"):

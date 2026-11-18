@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from kira.canvas import CanvasConfig, CanvasError
+from kira.canvas import DEFAULT_CANVAS, CanvasConfig, CanvasError
 from kira.pipeline import MangaPipeline
 from kira.converter import KINDLE_PROFILES, PROFILE_ALIASES, KindleConverter
 from kira.upscaler import MODEL_URLS, MangaUpscaler
@@ -38,11 +38,11 @@ def cli():
 @click.option("--grayscale/--color", default=False, help="Convert images to grayscale mode for e-ink.")
 @click.option("--cropping", default=0, type=click.IntRange(0, 2), help="KCC cropping mode (0: disabled, 1: margins, 2: margins + page number).")
 @click.option("--preserve-margin", default=0, type=click.IntRange(0, 99), help="KCC margin preservation percentage.")
-@click.option("--canvas/--no-canvas", "canvas_enabled", default=False, help="Normalize EPUB pages to the fixed K11 canvas.")
-@click.option("--canvas-top", default=8.0, type=float, help="Canvas top safety margin percentage.")
-@click.option("--canvas-bottom", default=8.0, type=float, help="Canvas bottom safety margin percentage.")
-@click.option("--canvas-left", default=3.0, type=float, help="Canvas left safety margin percentage.")
-@click.option("--canvas-right", default=3.0, type=float, help="Canvas right safety margin percentage.")
+@click.option("--canvas/--no-canvas", "canvas_enabled", default=None, help="Use the fixed canvas (automatic for K11 EPUB).")
+@click.option("--canvas-top", default=DEFAULT_CANVAS.top_margin_pct, type=float, help="Canvas top safety margin percentage.", show_default=True)
+@click.option("--canvas-bottom", default=DEFAULT_CANVAS.bottom_margin_pct, type=float, help="Canvas bottom safety margin percentage.", show_default=True)
+@click.option("--canvas-left", default=DEFAULT_CANVAS.left_margin_pct, type=float, help="Canvas left safety margin percentage.", show_default=True)
+@click.option("--canvas-right", default=DEFAULT_CANVAS.right_margin_pct, type=float, help="Canvas right safety margin percentage.", show_default=True)
 @click.option("--tile", default=400, type=int, help="Tile size for Real-ESRGAN GPU upscaling (prevents OOM).")
 @click.option("--device", default=None, type=str, help="Device to run upscaling on (cuda, cpu, mps).")
 @click.option("--max-dim", default=2400, type=int, help="Maximum image dimension limit (pixels).")
@@ -59,7 +59,7 @@ def process(
     grayscale: bool,
     cropping: int,
     preserve_margin: int,
-    canvas_enabled: bool,
+    canvas_enabled: Optional[bool],
     canvas_top: float,
     canvas_bottom: float,
     canvas_left: float,
@@ -225,11 +225,11 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
 @click.option("-f", "--format", "output_format", default="EPUB", type=click.Choice(["EPUB", "CBZ", "KFX", "AZW3", "MOBI"]), help="Output format.")
 @click.option("--cropping", default=0, type=click.IntRange(0, 2), help="KCC cropping mode.")
 @click.option("--preserve-margin", default=0, type=click.IntRange(0, 99), help="KCC margin preservation percentage.")
-@click.option("--canvas/--no-canvas", "canvas_enabled", default=False, help="Normalize EPUB pages to the fixed K11 canvas.")
-@click.option("--canvas-top", default=8.0, type=float, help="Canvas top safety margin percentage.")
-@click.option("--canvas-bottom", default=8.0, type=float, help="Canvas bottom safety margin percentage.")
-@click.option("--canvas-left", default=3.0, type=float, help="Canvas left safety margin percentage.")
-@click.option("--canvas-right", default=3.0, type=float, help="Canvas right safety margin percentage.")
+@click.option("--canvas/--no-canvas", "canvas_enabled", default=None, help="Use the fixed canvas (automatic for K11 EPUB).")
+@click.option("--canvas-top", default=DEFAULT_CANVAS.top_margin_pct, type=float, help="Canvas top safety margin percentage.", show_default=True)
+@click.option("--canvas-bottom", default=DEFAULT_CANVAS.bottom_margin_pct, type=float, help="Canvas bottom safety margin percentage.", show_default=True)
+@click.option("--canvas-left", default=DEFAULT_CANVAS.left_margin_pct, type=float, help="Canvas left safety margin percentage.", show_default=True)
+@click.option("--canvas-right", default=DEFAULT_CANVAS.right_margin_pct, type=float, help="Canvas right safety margin percentage.", show_default=True)
 @click.option("--tile", default=600, type=int, help="Tile size for GPU upscaling (default: 600 for Colab GPU).")
 @click.option("-w", "--workers", default=2, type=int, help="Number of concurrent worker threads (default: 2 for Colab GPU).")
 @click.option("--session-name", default="kira-remote", type=str, help="Colab session name.")
@@ -243,7 +243,7 @@ def colab_run(
     output_format: str,
     cropping: int,
     preserve_margin: int,
-    canvas_enabled: bool,
+    canvas_enabled: Optional[bool],
     canvas_top: float,
     canvas_bottom: float,
     canvas_left: float,

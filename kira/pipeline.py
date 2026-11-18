@@ -69,7 +69,7 @@ class MangaPipeline:
             hq=hq,
             cropping=cropping,
             preserve_margin=preserve_margin,
-            canvas=canvas,
+            canvas=canvas if canvas is not None else CanvasConfig(enabled=None),
         )
 
         self.keep_extracted = keep_extracted

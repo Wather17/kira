@@ -8,6 +8,8 @@ from typing import Optional
 
 from rich.console import Console
 
+from kira.canvas import DEFAULT_CANVAS
+
 console = Console()
 
 
@@ -26,11 +28,11 @@ def _build_remote_script_code(
     workers: int,
     cropping: int = 0,
     preserve_margin: int = 0,
-    canvas_enabled: bool = False,
-    canvas_top: float = 8.0,
-    canvas_bottom: float = 8.0,
-    canvas_left: float = 3.0,
-    canvas_right: float = 3.0,
+    canvas_enabled: Optional[bool] = None,
+    canvas_top: float = DEFAULT_CANVAS.top_margin_pct,
+    canvas_bottom: float = DEFAULT_CANVAS.bottom_margin_pct,
+    canvas_left: float = DEFAULT_CANVAS.left_margin_pct,
+    canvas_right: float = DEFAULT_CANVAS.right_margin_pct,
 ) -> str:
     """Build the remote Python script that runs the Kira pipeline via argv (no shell)."""
     return f"""
@@ -65,7 +67,8 @@ if not os.path.exists('/content/drive/MyDrive'):
 
 print('[Remote Colab Worker] Installing system packages & latest Kira...')
 os.system('apt-get update -qq && apt-get install -y -qq p7zip-full unrar > /dev/null 2>&1')
-os.system('pip install -q git+https://github.com/Wather17/kira.git')
+subprocess.run([sys.executable, '-m', 'pip', 'install', '-q',
+                'kira-manga[kcc] @ git+https://github.com/Wather17/kira.git'], check=True)
 
 input_path = {json.dumps(input_path)}
 output_dir = {json.dumps(output_dir)}
@@ -76,7 +79,7 @@ tile = {json.dumps(tile)}
 workers = {json.dumps(workers)}
 cropping = {json.dumps(cropping)}
 preserve_margin = {json.dumps(preserve_margin)}
-canvas_enabled = {json.dumps(canvas_enabled)}
+canvas_enabled = {canvas_enabled!r}
 canvas_top = {json.dumps(canvas_top)}
 canvas_bottom = {json.dumps(canvas_bottom)}
 canvas_left = {json.dumps(canvas_left)}
@@ -100,9 +103,10 @@ try:
         '--cropping', str(cropping),
         '--preserve-margin', str(preserve_margin),
     ]
-    if canvas_enabled:
+    if canvas_enabled is not None:
+        command.append('--canvas' if canvas_enabled else '--no-canvas')
+    if canvas_enabled is not False:
         command.extend([
-            '--canvas',
             '--canvas-top', str(canvas_top),
             '--canvas-bottom', str(canvas_bottom),
             '--canvas-left', str(canvas_left),
@@ -132,11 +136,11 @@ def run_pipeline_on_colab(
     workers: int = 2,
     cropping: int = 0,
     preserve_margin: int = 0,
-    canvas_enabled: bool = False,
-    canvas_top: float = 8.0,
-    canvas_bottom: float = 8.0,
-    canvas_left: float = 3.0,
-    canvas_right: float = 3.0,
+    canvas_enabled: Optional[bool] = None,
+    canvas_top: float = DEFAULT_CANVAS.top_margin_pct,
+    canvas_bottom: float = DEFAULT_CANVAS.bottom_margin_pct,
+    canvas_left: float = DEFAULT_CANVAS.left_margin_pct,
+    canvas_right: float = DEFAULT_CANVAS.right_margin_pct,
     auto_stop: bool = True
 ) -> bool:
     """

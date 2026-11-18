@@ -1,3 +1,4 @@
+from dataclasses import replace
 import shutil
 import subprocess
 import sys
@@ -76,6 +77,11 @@ class KindleConverter:
             raise ValueError("preserve_margin must be between 0 and 99")
         self.preserve_margin = preserve_margin
         self.canvas = canvas or CanvasConfig(enabled=False)
+        if self.canvas.enabled is None:
+            self.canvas = replace(
+                self.canvas,
+                enabled=self.profile == "K11" and self.output_format == "EPUB",
+            )
         if self.canvas.enabled and self.profile != "K11":
             raise ValueError("canvas normalization currently supports only the K11 profile")
         self.last_fallback = False
@@ -248,6 +254,9 @@ class KindleConverter:
         ]
         if matches:
             return self._finalize_output(matches[0])
+
+        if self.canvas.enabled:
+            raise RuntimeError("KCC produced no new EPUB to normalize with the canvas")
 
         print("[Kira Warning] KCC returned success but produced no new compatible output.")
         print("[Kira] Attempting CBZ fallback creation...")

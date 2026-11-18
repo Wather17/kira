@@ -172,6 +172,16 @@ def test_converter_rejects_canvas_for_non_epub(tmp_path: Path):
         converter.convert(manga_dir, tmp_path / "out", title="TestManga")
 
 
+def test_converter_requires_kcc_when_canvas_is_active(tmp_path):
+    converter = KindleConverter(canvas=CanvasConfig(enabled=None))
+    converter.kcc_bin = None
+
+    with pytest.raises(RuntimeError, match="requires the KCC"):
+        converter.convert(tmp_path, tmp_path / "out")
+
+    assert list((tmp_path / "out").iterdir()) == []
+
+
 def test_converter_cropping_independent_of_profile():
     for profile in ('K11', 'KPW5'):
         converter = KindleConverter(profile=profile, cropping=0)
@@ -322,7 +332,8 @@ def test_converter_kcc_success_does_not_flag_fallback(monkeypatch):
         assert converter.last_fallback is False
 
 
-def test_converter_does_not_return_stale_output_when_kcc_creates_nothing(monkeypatch):
+@pytest.mark.parametrize("canvas_enabled", [False, True])
+def test_converter_does_not_return_stale_output_when_kcc_creates_nothing(monkeypatch, canvas_enabled):
     def fake_run(cmd, **kwargs):
         class FakeComp:
             returncode = 0
@@ -342,8 +353,14 @@ def test_converter_does_not_return_stale_output_when_kcc_creates_nothing(monkeyp
         stale = out_dir / "TestManga.epub"
         stale.write_bytes(b"old")
 
-        converter = KindleConverter(profile='K11', output_format='EPUB')
+        converter = KindleConverter(canvas=CanvasConfig(enabled=canvas_enabled))
         converter.kcc_bin = "/usr/bin/fake-kcc"
+        if canvas_enabled:
+            with pytest.raises(RuntimeError, match="no new EPUB"):
+                converter.convert(manga_dir, out_dir, title="TestManga")
+            assert not (out_dir / "TestManga.cbz").exists()
+            assert stale.read_bytes() == b"old"
+            return
         result = converter.convert(manga_dir, out_dir, title="TestManga")
 
         assert result == out_dir / "TestManga.cbz"

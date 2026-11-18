@@ -36,11 +36,11 @@ class CanvasError(ValueError):
 
 @dataclass(frozen=True)
 class CanvasConfig:
-    """Canvas settings expressed as percentages of the final image."""
+    """Canvas margins in percent. The converter resolves None as automatic."""
 
-    enabled: bool = False
-    top_margin_pct: float = 8.0
-    bottom_margin_pct: float = 8.0
+    enabled: Optional[bool] = False
+    top_margin_pct: float = 2.0
+    bottom_margin_pct: float = 2.0
     left_margin_pct: float = 3.0
     right_margin_pct: float = 3.0
 
@@ -66,6 +66,9 @@ class CanvasConfig:
         top = round(height * self.top_margin_pct / 100)
         bottom = round(height * self.bottom_margin_pct / 100)
         return left, top, right, bottom
+
+
+DEFAULT_CANVAS = CanvasConfig()
 
 
 def _local_name(tag: str) -> str:
@@ -240,10 +243,8 @@ def _update_document_dimensions(
     image_dimensions: Dict[str, Tuple[int, int]],
     document_path: str,
     profile: str,
-    hq: bool,
 ) -> bool:
-    first_target = None
-    changed = False
+    display_size = None
     for image in document.iter():
         if _local_name(image.tag) != "img":
             continue
@@ -254,16 +255,15 @@ def _update_document_dimensions(
         target = image_dimensions.get(image_path)
         if target is None:
             continue
-        image.set("width", str(target[0]))
-        image.set("height", str(target[1]))
-        first_target = first_target or target
-        changed = True
+        width, height = _logical_size(profile, landscape=target[0] > target[1])
+        image.set("width", str(width))
+        image.set("height", str(height))
+        display_size = display_size or (width, height)
 
-    if not changed:
+    if display_size is None:
         return False
 
-    landscape = first_target[0] > first_target[1]
-    logical_width, logical_height = _logical_size(profile, landscape)
+    logical_width, logical_height = display_size
     viewport = f"width={logical_width}, height={logical_height}"
     viewport_nodes = [
         node
@@ -358,7 +358,7 @@ def normalize_epub(
         )
 
     for document_path, root in document_roots.items():
-        if _update_document_dimensions(root, image_targets, document_path, profile, hq):
+        if _update_document_dimensions(root, image_targets, document_path, profile):
             entries[document_path] = _serialize_xml(root)
 
     temp_path = None
