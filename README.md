@@ -78,14 +78,13 @@ kira process -i "./mangas/Monster_Vol_01.cbz" -o "./kindle_pronto" -p K11 -f EPU
 # Processar pasta com múltiplos mangás em lote
 kira process -i "./Manga_Inputs" -o "./Kindle_Outputs" -p K11 -f EPUB
 
-# Ativar o canvas seguro experimental do K11
+# Processar sem o canvas padrão do K11
 kira process -i "./manga.cbz" -o "./Kindle_Outputs" -p K11 -f EPUB \
-  --cropping 2 --preserve-margin 50 --canvas
+  --no-canvas
 ```
 
-O canvas é opcional e específico para EPUB/K11 nesta primeira versão. Ele
-padroniza as páginas em um canvas fixo, encaixa o conteúdo sem distorção e
-aplica margens independentes para reduzir cortes nas bordas do Kindle.
+O canvas vem ativo para EPUB no perfil K11. Ele encaixa a arte sem distorção,
+com 2% de margem no topo e na base e 3% nas laterais. O canvas exige o KCC.
 
 ### 2. Execução Remota na GPU do Google Colab
 Dispare o pipeline completo na nuvem do Google Colab sem abrir navegador:

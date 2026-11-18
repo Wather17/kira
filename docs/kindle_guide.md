@@ -20,22 +20,22 @@ Ao executar o Kira, selecione a flag `-p` correspondente ao seu modelo de Kindle
 
 > Obs.: `KPW3` e `K345` são aliases aceitos pela CLI (com aviso de depreciação), traduzidos para `KPW34` e `K34`, respectivamente.
 
-### Canvas seguro experimental para K11
+### Canvas padrão para EPUB no K11
 
 Para evitar que páginas com proporções diferentes entreguem margens e áreas
-de leitura inconsistentes, o Kira oferece um canvas opcional para o perfil
-`K11` em saída `EPUB`:
+de leitura inconsistentes, o Kira ativa o canvas para o perfil `K11` em
+saída `EPUB` por padrão.
 
 ```bash
-kira process -i "./manga.cbz" -o "./kindle" -p K11 -f EPUB \
-  --cropping 2 --preserve-margin 50 --canvas
+kira process -i "./manga.cbz" -o "./kindle" -p K11 -f EPUB
 ```
 
 O canvas mantém o conteúdo proporcionalmente dentro de uma área segura, com
-8% de margem superior/inferior e 3% nas laterais por padrão. As margens podem
+2% de margem superior/inferior e 3% nas laterais por padrão. As margens podem
 ser ajustadas com `--canvas-top`, `--canvas-bottom`, `--canvas-left` e
-`--canvas-right`. O recurso fica desligado por padrão e não altera saídas CBZ
-ou KFX.
+`--canvas-right`. Use `--no-canvas` para desligar. No notebook, selecione
+`off` em `Canvas_Mode`. Com o canvas ativo, o Kira exige que o KCC produza
+um EPUB. As opções de crop do KCC continuam independentes do canvas.
 
 ---
 
