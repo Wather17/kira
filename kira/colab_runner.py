@@ -130,7 +130,7 @@ def run_pipeline_on_colab(
     gpu: str = "T4",
     model: str = "RealESRGAN_x4plus_anime_6B",
     profile: str = "K11",
-    output_format: str = "AZW3",
+    output_format: str = "EPUB",
     session_name: str = "kira-remote",
     tile: int = 600,
     workers: int = 2,
