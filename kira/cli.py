@@ -215,6 +215,29 @@ def merge_volumes(input_dir: str, output_dir: str, title: Optional[str], mapping
     console.print(f"\n[bold green]Successfully created {len(merged_files)} Volume CBZ files in {out}[/bold green]")
 
 
+@cli.command(name="audit")
+@click.option("-i", "--input", "source_path", type=click.Path(exists=True, path_type=Path), help="Original CBZ/image folder or image file.")
+@click.option("--upscaled", type=click.Path(exists=True, path_type=Path), help="Optional post-upscale CBZ/image folder.")
+@click.option("--epub", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path), help="Final Kira EPUB to inspect.")
+@click.option("-p", "--profile", default="K11", show_default=True, type=click.Choice(["K11"]), help="Kindle preview profile.")
+@click.option("-o", "--report", "output_dir", required=True, type=click.Path(file_okay=False, path_type=Path), help="Directory for report and previews.")
+@click.option("--preview/--no-preview", default=True, help="Render an approximate browser preview when a supported browser is installed.")
+@click.option("--baseline", type=click.Path(exists=True, dir_okay=False, path_type=Path), help="Previous report.json used to identify regressions.")
+def audit(source_path: Optional[Path], upscaled: Optional[Path], epub: Path, profile: str, output_dir: Path, preview: bool, baseline: Optional[Path]):
+    """Audit an EPUB offline and write reproducible per-page evidence."""
+    import zipfile
+    from kira.visual_audit import AuditError, audit_epub
+    try:
+        report = audit_epub(epub, output_dir, source_path, upscaled, profile, preview, baseline)
+    except (AuditError, OSError, zipfile.BadZipFile) as exc:
+        raise click.ClickException(str(exc)) from exc
+    counts = {state: sum(page["status"] == state for page in report["pages"]) for state in ("pass", "suspect", "not_compared", "fail")}
+    console.print(f"Audit report: {output_dir / 'report.json'}")
+    console.print(f"Pages: {report['page_count']} | pass: {counts['pass']} | suspect: {counts['suspect']} | not compared: {counts['not_compared']} | fail: {counts['fail']}")
+    if report["preview"]["status"] == "inconclusive":
+        console.print(f"Preview inconclusive: {report['preview']['reason']}")
+
+
 @cli.command(name="colab-run")
 @click.option("-i", "--input", "input_path", required=True, type=str, help="Input folder/file in Google Drive (e.g. Manga_Inputs).")
 @click.option("-o", "--output", "output_dir", required=True, type=str, help="Output folder in Google Drive (e.g. Kindle_Outputs).")
