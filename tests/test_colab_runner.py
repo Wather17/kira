@@ -1,7 +1,19 @@
 from pathlib import Path
+from inspect import signature
 from unittest.mock import MagicMock, patch
 import pytest
 from kira.colab_runner import _build_remote_script_code, is_colab_cli_available, run_pipeline_on_colab
+
+
+def test_remote_script_defaults_to_epub_and_preserves_explicit_format():
+    default = signature(run_pipeline_on_colab).parameters["output_format"].default
+    assert default == "EPUB"
+    script = _build_remote_script_code("manga", "output", "model", "K11", default, 600, 2)
+    assert "output_format = \"EPUB\"" in script
+    assert "'-f', output_format" in script
+
+    explicit = _build_remote_script_code("manga", "output", "model", "K11", "MOBI", 600, 2)
+    assert "output_format = \"MOBI\"" in explicit
 
 
 @pytest.mark.parametrize("enabled,flag", [(None, None), (True, "--canvas"), (False, "--no-canvas")])
