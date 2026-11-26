@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 
+from kira.canvas import CanvasConfig
 from kira.converter import KindleConverter
 from kira.extractor import MangaExtractor
 from kira.upscaler import MangaUpscaler
@@ -40,6 +41,8 @@ class MangaPipeline:
         gamma: float = 1.0,
         hq: bool = True,
         cropping: int = 0,
+        preserve_margin: int = 0,
+        canvas: Optional[CanvasConfig] = None,
         # Pipeline options
         keep_extracted: bool = False,
         keep_upscaled_cbz: bool = True,
@@ -65,6 +68,8 @@ class MangaPipeline:
             gamma=gamma,
             hq=hq,
             cropping=cropping,
+            preserve_margin=preserve_margin,
+            canvas=canvas if canvas is not None else CanvasConfig(enabled=None),
         )
 
         self.keep_extracted = keep_extracted
