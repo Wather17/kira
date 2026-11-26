@@ -39,6 +39,33 @@ um EPUB. As opções de crop do KCC continuam independentes do canvas.
 
 ---
 
+### Auditoria visual offline
+
+`kira audit` inspeciona a ordem de leitura (OPF spine) e as imagens ligadas no
+EPUB, e grava um relatório JSON por página:
+
+```bash
+kira audit --input ./manga-original.cbz --upscaled ./upscaled-pages \\
+  --epub ./book.epub --profile K11 --report ./audit-results
+```
+
+Compare com um `report.json` anterior usando `--baseline ./auditoria-antiga/report.json`;
+o novo relatório lista páginas adicionadas/removidas e aumentos na métrica de
+diferença visual. A folha de contato é salva como `contact_sheet.png`, junto
+das capturas individuais.
+
+As entradas original e pós-upscale são opcionais. Sem elas, o relatório valida
+a estrutura do EPUB, mas marca as páginas como `not_compared`. A comparação e
+a correspondência entre imagens são heurísticas; revise suspeitas e a origem
+indicada, especialmente quando o KCC divide páginas duplas. Fallback CBZ ou
+EPUB sem imagens vinculadas pela spine não é reportado como aprovação.
+
+Com Firefox ou Chromium instalado, são salvas capturas aproximadas no viewport
+K11 (1072 × 1448). Isso não emula firmware Kindle, tela e-ink ou conversão do
+Send to Kindle. Se a renderização falhar ou o navegador não estiver instalado,
+o relatório registra `inconclusive` e o motivo. Nenhuma imagem é enviada a
+serviços externos.
+
 ## 2. Como Enviar os Mangás para o seu Kindle
 
 ### Método 1: Send to Kindle Web (Recomendado ⭐)
